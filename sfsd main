@@ -121,6 +121,20 @@ Fichier* trouver_fichier(const char *nom) {
     return NULL;
 }
 
+void inserer_enregistrement(Fichier *fichier, int id, const char *champs) {
+    if (fichier->nb_enregistrements >= fichier->metadonnees.taille_en_enregistrements) {
+        printf("Impossible d'insérer un nouvel enregistrement : capacité maximale atteinte pour le fichier '%s'.\n", fichier->nom);
+        return;
+    }
+
+    Enregistrement *enregistrement = &fichier->enregistrements[fichier->nb_enregistrements];
+    enregistrement->id = id;
+    strcpy(enregistrement->champs, champs);
+    fichier->nb_enregistrements++;
+
+    printf("Enregistrement ajouté au fichier '%s'. Nombre total : %d.\n", fichier->nom, fichier->nb_enregistrements);
+}
+
 void afficher_menu() {
     printf("\n--- Simulateur de Système de Gestion de Fichiers ---\n");
     printf("1. Initialiser la mémoire secondaire\n");
@@ -130,6 +144,7 @@ void afficher_menu() {
     printf("5. Vider la mémoire secondaire\n");
     printf("6. Compactage\n");
     printf("7. Quitter\n");
+    printf("8. Insérer un enregistrement\n");
 }
 
 int main() {
@@ -190,6 +205,25 @@ int main() {
             case 7:
                 printf("Au revoir !\n");
                 return 0;
+
+            case 8: {
+                printf("Nom du fichier : ");
+                scanf("%s", nom);
+                Fichier *fichier = trouver_fichier(nom);
+                if (!fichier) {
+                    printf("Fichier '%s' non trouvé.\n", nom);
+                    break;
+                }
+
+                int id;
+                char champs[100];
+                printf("ID de l'enregistrement : ");
+                scanf("%d", &id);
+                printf("Champs de l'enregistrement : ");
+                scanf("%s", champs);
+                inserer_enregistrement(fichier, id, champs);
+                break;
+            }
 
             default:
                 printf("Choix invalide. Veuillez réessayer.\n");
