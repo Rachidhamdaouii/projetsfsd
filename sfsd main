@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 
 #define MAX_BLOCS 1000
 #define TAILLE_BLOC 512
@@ -35,11 +36,18 @@ Bloc disque[MAX_BLOCS];
 Fichier fichiers[MAX_FICHIERS];
 int nb_fichiers = 0;
 
-void initialiser_disque() {
-    for (int i = 0; i < MAX_BLOCS; i++) {
+void initialiser_disque(int total_blocs) {
+    for (int i = 0; i < total_blocs; i++) {
         disque[i].libre = 1;
     }
-    printf("Mémoire secondaire initialisée.\n");
+    printf("Mémoire secondaire initialisée avec %d blocs.\n", total_blocs);
+}
+
+void afficher_table_allocation(int total_blocs) {
+    printf("\n--- Table d'allocation des blocs ---\n");
+    for (int i = 0; i < total_blocs; i++) {
+        printf("Bloc %d : %s\n", i, disque[i].libre ? "Libre" : "Occupé");
+    }
 }
 
 void creer_fichier(char *nom, int nb_enregistrements, char *mode_globale, char *mode_interne) {
@@ -61,9 +69,9 @@ void creer_fichier(char *nom, int nb_enregistrements, char *mode_globale, char *
     printf("Fichier '%s' créé.\n", nom);
 }
 
-void charger_fichier(Fichier *fichier) {
+void charger_fichier(Fichier *fichier, int total_blocs) {
     int blocs_necessaires = fichier->metadonnees.taille_en_blocs;
-    for (int i = 0; i < MAX_BLOCS && blocs_necessaires > 0; i++) {
+    for (int i = 0; i < total_blocs && blocs_necessaires > 0; i++) {
         if (disque[i].libre) {
             disque[i].libre = 0;
             if (fichier->metadonnees.adresse_premier_bloc == -1) {
@@ -80,6 +88,30 @@ void charger_fichier(Fichier *fichier) {
     }
 }
 
+void vider_disque(int total_blocs) {
+    for (int i = 0; i < total_blocs; i++) {
+        disque[i].libre = 1;
+    }
+    nb_fichiers = 0;
+    printf("Mémoire secondaire vidée.\n");
+}
+
+void compactage(int total_blocs) {
+    int bloc_courant = 0;
+
+    for (int i = 0; i < total_blocs; i++) {
+        if (!disque[i].libre) {
+            if (i != bloc_courant) {
+                disque[bloc_courant] = disque[i];
+                disque[i].libre = 1;
+            }
+            bloc_courant++;
+        }
+    }
+
+    printf("Compactage effectué.\n");
+}
+
 Fichier* trouver_fichier(const char *nom) {
     for (int i = 0; i < nb_fichiers; i++) {
         if (strcmp(fichiers[i].nom, nom) == 0) {
@@ -89,46 +121,21 @@ Fichier* trouver_fichier(const char *nom) {
     return NULL;
 }
 
-void inserer_enregistrement(Fichier *fichier, int id, const char *champs) {
-    if (fichier->nb_enregistrements >= MAX_ENREGISTREMENTS) {
-        printf("Le fichier est plein.\n");
-        return;
-    }
-
-    fichier->enregistrements[fichier->nb_enregistrements].id = id;
-    strcpy(fichier->enregistrements[fichier->nb_enregistrements].champs, champs);
-    fichier->nb_enregistrements++;
-    printf("Enregistrement ajouté au fichier '%s'.\n", fichier->nom);
-}
-
-void defragmenter_fichier(Fichier *fichier) {
-    int index_libre = 0;
-    for (int i = 0; i < fichier->nb_enregistrements; i++) {
-        if (fichier->enregistrements[i].id != -1) {
-            if (i != index_libre) {
-                fichier->enregistrements[index_libre] = fichier->enregistrements[i];
-            }
-            index_libre++;
-        }
-    }
-    fichier->nb_enregistrements = index_libre;
-    printf("Défragmentation du fichier '%s' terminée.\n", fichier->nom);
-}
-
 void afficher_menu() {
     printf("\n--- Simulateur de Système de Gestion de Fichiers ---\n");
     printf("1. Initialiser la mémoire secondaire\n");
     printf("2. Créer un fichier\n");
     printf("3. Charger un fichier\n");
-    printf("4. Insérer un enregistrement\n");
-    printf("5. Défragmenter un fichier\n");
-    printf("6. Quitter\n");
+    printf("4. Afficher la table d'allocation\n");
+    printf("5. Vider la mémoire secondaire\n");
+    printf("6. Compactage\n");
+    printf("7. Quitter\n");
 }
 
 int main() {
-    int choix;
-    char nom[50], mode_globale[10], mode_interne[10], champs[100];
-    int nb_enregistrements, id;
+    int choix, total_blocs = MAX_BLOCS;
+    char nom[50], mode_globale[10], mode_interne[10];
+    int nb_enregistrements;
 
     while (1) {
         afficher_menu();
@@ -140,7 +147,9 @@ int main() {
 
         switch (choix) {
             case 1:
-                initialiser_disque();
+                printf("Nombre total de blocs : ");
+                scanf("%d", &total_blocs);
+                initialiser_disque(total_blocs);
                 break;
 
             case 2:
@@ -160,39 +169,25 @@ int main() {
                 scanf("%s", nom);
                 Fichier *fichier_a_charger = trouver_fichier(nom);
                 if (fichier_a_charger) {
-                    charger_fichier(fichier_a_charger);
+                    charger_fichier(fichier_a_charger, total_blocs);
                 } else {
                     printf("Fichier '%s' non trouvé.\n", nom);
                 }
                 break;
 
             case 4:
-                printf("Nom du fichier : ");
-                scanf("%s", nom);
-                Fichier *fichier = trouver_fichier(nom);
-                if (fichier) {
-                    printf("ID de l'enregistrement : ");
-                    scanf("%d", &id);
-                    printf("Champs : ");
-                    scanf("%s", champs);
-                    inserer_enregistrement(fichier, id, champs);
-                } else {
-                    printf("Fichier '%s' non trouvé.\n", nom);
-                }
+                afficher_table_allocation(total_blocs);
                 break;
 
             case 5:
-                printf("Nom du fichier à défragmenter : ");
-                scanf("%s", nom);
-                Fichier *fichier_a_defragmenter = trouver_fichier(nom);
-                if (fichier_a_defragmenter) {
-                    defragmenter_fichier(fichier_a_defragmenter);
-                } else {
-                    printf("Fichier '%s' non trouvé.\n", nom);
-                }
+                vider_disque(total_blocs);
                 break;
 
             case 6:
+                compactage(total_blocs);
+                break;
+
+            case 7:
                 printf("Au revoir !\n");
                 return 0;
 
