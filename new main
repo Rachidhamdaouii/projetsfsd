@@ -222,9 +222,9 @@ int main() {
                 scanf("%s", nom);
                 printf("Nombre d'enregistrements : ");
                 scanf("%d", &nb_enregistrements);
-                printf("Mode d'organisation globale (contigue/chainee) : ");
+                printf("Mode d'organisation globale : ");
                 scanf("%s", mode_globale);
-                printf("Mode d'organisation interne (trie/nontrie) : ");
+                printf("Mode d'organisation interne : ");
                 scanf("%s", mode_interne);
                 creer_fichier(nom, nb_enregistrements, mode_globale, mode_interne);
                 break;
@@ -232,17 +232,11 @@ int main() {
             case 3:
                 printf("Nom du fichier à charger : ");
                 scanf("%s", nom);
-                Fichier *fichier_a_charger = NULL;
                 for (int i = 0; i < nb_fichiers; i++) {
                     if (strcmp(fichiers[i].nom, nom) == 0) {
-                        fichier_a_charger = &fichiers[i];
+                        charger_fichier(&fichiers[i], total_blocs);
                         break;
                     }
-                }
-                if (fichier_a_charger) {
-                    charger_fichier(fichier_a_charger, total_blocs);
-                } else {
-                    printf("Fichier '%s' non trouvé.\n", nom);
                 }
                 break;
 
@@ -251,186 +245,123 @@ int main() {
                 break;
 
             case 5:
-                for (int i = 0; i < total_blocs; i++) {
-                    disque[i].libre = 1;
-                }
-                nb_fichiers = 0;
-                printf("Mémoire secondaire vidée.\n");
+                // Simuler la suppression de tous les fichiers
+                printf("Vider la mémoire secondaire.\n");
                 break;
 
             case 6:
-                for (int i = 0; i < nb_fichiers; i++) {
-                    suppression_physique(&fichiers[i]);
-                }
-                printf("Compactage global effectué.\n");
+                // Implémenter le compactage
                 break;
 
             case 7:
-                printf("Nom du fichier : ");
+                printf("Nom du fichier à rechercher : ");
                 scanf("%s", nom);
-                Fichier *fichier_recherche = NULL;
                 for (int i = 0; i < nb_fichiers; i++) {
                     if (strcmp(fichiers[i].nom, nom) == 0) {
-                        fichier_recherche = &fichiers[i];
+                        printf("ID à rechercher : ");
+                        int id;
+                        scanf("%d", &id);
+                        rechercher_enregistrement(&fichiers[i], id);
                         break;
                     }
                 }
-                if (fichier_recherche) {
-                    int id;
-                    printf("ID de l'enregistrement à rechercher : ");
-                    scanf("%d", &id);
-                    rechercher_enregistrement(fichier_recherche, id);
-                } else {
-                    printf("Fichier '%s' non trouvé.\n", nom);
-                }
                 break;
 
-            case 8: {
-                printf("Nom du fichier : ");
+            case 8:
+                printf("Nom du fichier pour insérer : ");
                 scanf("%s", nom);
-                Fichier *fichier = NULL;
                 for (int i = 0; i < nb_fichiers; i++) {
                     if (strcmp(fichiers[i].nom, nom) == 0) {
-                        fichier = &fichiers[i];
+                        printf("ID de l'enregistrement : ");
+                        int id;
+                        scanf("%d", &id);
+                        printf("Champs : ");
+                        char champs[100];
+                        scanf("%s", champs);
+                        inserer_enregistrement(&fichiers[i], id, champs);
                         break;
                     }
                 }
-                if (fichier) {
-                    int id;
-                    char champs[100];
-                    printf("ID de l'enregistrement : ");
-                    scanf("%d", &id);
-                    printf("Champs de l'enregistrement : ");
-                    scanf("%s", champs);
-                    inserer_enregistrement(fichier, id, champs);
-                } else {
-                    printf("Fichier '%s' non trouvé.\n", nom);
-                }
                 break;
-            }
 
-            case 9: {
-                printf("Nom du fichier : ");
+            case 9:
+                printf("Nom du fichier pour suppression logique : ");
                 scanf("%s", nom);
-                Fichier *fichier = NULL;
                 for (int i = 0; i < nb_fichiers; i++) {
                     if (strcmp(fichiers[i].nom, nom) == 0) {
-                        fichier = &fichiers[i];
+                        printf("ID de l'enregistrement à supprimer : ");
+                        int id;
+                        scanf("%d", &id);
+                        suppression_logique(&fichiers[i], id);
                         break;
                     }
                 }
-                if (fichier) {
-                    int id;
-                    printf("ID de l'enregistrement à supprimer logiquement : ");
-                    scanf("%d", &id);
-                    suppression_logique(fichier, id);
-                } else {
-                    printf("Fichier '%s' non trouvé.\n", nom);
-                }
                 break;
-            }
 
-            case 10: {
-                printf("Nom du fichier : ");
+            case 10:
+                printf("Nom du fichier pour suppression physique : ");
                 scanf("%s", nom);
-                Fichier *fichier = NULL;
                 for (int i = 0; i < nb_fichiers; i++) {
                     if (strcmp(fichiers[i].nom, nom) == 0) {
-                        fichier = &fichiers[i];
+                        suppression_physique(&fichiers[i]);
                         break;
                     }
                 }
-                if (fichier) {
-                    suppression_physique(fichier);
-                } else {
-                    printf("Fichier '%s' non trouvé.\n", nom);
-                }
                 break;
-            }
 
-            case 11: {
-                printf("Nom du fichier : ");
+            case 11:
+                printf("Nom du fichier pour compactage : ");
                 scanf("%s", nom);
-                Fichier *fichier = NULL;
                 for (int i = 0; i < nb_fichiers; i++) {
                     if (strcmp(fichiers[i].nom, nom) == 0) {
-                        fichier = &fichiers[i];
+                        compactage_fichier(&fichiers[i]);
                         break;
                     }
                 }
-                if (fichier) {
-                    compactage_fichier(fichier);
-                } else {
-                    printf("Fichier '%s' non trouvé.\n", nom);
-                }
                 break;
-            }
 
-            case 12: {
-                printf("Nom actuel du fichier : ");
+            case 12:
+                printf("Nom du fichier à renommer : ");
                 scanf("%s", nom);
-                Fichier *fichier = NULL;
+                printf("Nouveau nom : ");
+                char nouveau_nom[50];
+                scanf("%s", nouveau_nom);
                 for (int i = 0; i < nb_fichiers; i++) {
                     if (strcmp(fichiers[i].nom, nom) == 0) {
-                        fichier = &fichiers[i];
+                        renommer_fichier(&fichiers[i], nouveau_nom);
                         break;
                     }
                 }
-                if (fichier) {
-                    char nouveau_nom[50];
-                    printf("Nouveau nom du fichier : ");
-                    scanf("%s", nouveau_nom);
-                    renommer_fichier(fichier, nouveau_nom);
-                } else {
-                    printf("Fichier '%s' non trouvé.\n", nom);
-                }
                 break;
-            }
 
-            case 13: {
+            case 13:
                 printf("Nom du fichier à supprimer : ");
                 scanf("%s", nom);
-                Fichier *fichier = NULL;
                 for (int i = 0; i < nb_fichiers; i++) {
                     if (strcmp(fichiers[i].nom, nom) == 0) {
-                        fichier = &fichiers[i];
+                        supprimer_fichier(&fichiers[i]);
                         break;
                     }
                 }
-                if (fichier) {
-                    supprimer_fichier(fichier);
-                } else {
-                    printf("Fichier '%s' non trouvé.\n", nom);
-                }
                 break;
-            }
 
-            case 14: {
-                printf("Nom du fichier : ");
+            case 14:
+                printf("Nom du fichier pour afficher les métadonnées : ");
                 scanf("%s", nom);
-                Fichier *fichier = NULL;
                 for (int i = 0; i < nb_fichiers; i++) {
                     if (strcmp(fichiers[i].nom, nom) == 0) {
-                        fichier = &fichiers[i];
+                        afficher_metadonnees(&fichiers[i]);
                         break;
                     }
                 }
-                if (fichier) {
-                    afficher_metadonnees(fichier);
-                } else {
-                    printf("Fichier '%s' non trouvé.\n", nom);
-                }
                 break;
-            }
 
             case 15:
-                printf("Au revoir !\n");
+                printf("Au revoir!\n");
                 return 0;
 
             default:
-                printf("Choix invalide. Veuillez réessayer.\n");
-                break;
+                printf("Choix invalide, veuillez essayer à nouveau.\n");
         }
     }
 }
-
