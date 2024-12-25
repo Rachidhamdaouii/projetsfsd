@@ -1,0 +1,204 @@
+#include <stdio.h>
+#include <string.h>
+
+#define MAX_BLOCS 1000
+#define TAILLE_BLOC 512
+#define MAX_ENREGISTREMENTS 100
+#define MAX_FICHIERS 100
+
+typedef struct {
+    int libre;  // 1 si le bloc est libre, 0 sinon
+} Bloc;
+
+typedef struct {
+    char nom[50];
+    int taille_en_blocs;
+    int taille_en_enregistrements;
+    int adresse_premier_bloc;
+    char mode_organisation_globale[10];
+    char mode_organisation_interne[10];
+} Metadonnees;
+
+typedef struct {
+    int id;
+    char champs[100];
+} Enregistrement;
+
+typedef struct {
+    char nom[50];
+    Metadonnees metadonnees;
+    Enregistrement enregistrements[MAX_ENREGISTREMENTS];
+    int nb_enregistrements;
+} Fichier;
+
+Bloc disque[MAX_BLOCS];
+Fichier fichiers[MAX_FICHIERS];
+int nb_fichiers = 0;
+
+void initialiser_disque() {
+    for (int i = 0; i < MAX_BLOCS; i++) {
+        disque[i].libre = 1;
+    }
+    printf("Mémoire secondaire initialisée.\n");
+}
+
+void creer_fichier(char *nom, int nb_enregistrements, char *mode_globale, char *mode_interne) {
+    if (nb_fichiers >= MAX_FICHIERS) {
+        printf("Nombre maximum de fichiers atteint.\n");
+        return;
+    }
+
+    Fichier *fichier = &fichiers[nb_fichiers];
+    strcpy(fichier->nom, nom);
+    fichier->metadonnees.taille_en_blocs = (nb_enregistrements * sizeof(Enregistrement) + TAILLE_BLOC - 1) / TAILLE_BLOC;
+    fichier->metadonnees.taille_en_enregistrements = nb_enregistrements;
+    fichier->metadonnees.adresse_premier_bloc = -1;
+    strcpy(fichier->metadonnees.mode_organisation_globale, mode_globale);
+    strcpy(fichier->metadonnees.mode_organisation_interne, mode_interne);
+    fichier->nb_enregistrements = 0;
+
+    nb_fichiers++;
+    printf("Fichier '%s' créé.\n", nom);
+}
+
+void charger_fichier(Fichier *fichier) {
+    int blocs_necessaires = fichier->metadonnees.taille_en_blocs;
+    for (int i = 0; i < MAX_BLOCS && blocs_necessaires > 0; i++) {
+        if (disque[i].libre) {
+            disque[i].libre = 0;
+            if (fichier->metadonnees.adresse_premier_bloc == -1) {
+                fichier->metadonnees.adresse_premier_bloc = i;
+            }
+            blocs_necessaires--;
+        }
+    }
+
+    if (blocs_necessaires > 0) {
+        printf("Espace insuffisant pour charger le fichier '%s'.\n", fichier->nom);
+    } else {
+        printf("Fichier '%s' chargé en mémoire.\n", fichier->nom);
+    }
+}
+
+Fichier* trouver_fichier(const char *nom) {
+    for (int i = 0; i < nb_fichiers; i++) {
+        if (strcmp(fichiers[i].nom, nom) == 0) {
+            return &fichiers[i];
+        }
+    }
+    return NULL;
+}
+
+void inserer_enregistrement(Fichier *fichier, int id, const char *champs) {
+    if (fichier->nb_enregistrements >= MAX_ENREGISTREMENTS) {
+        printf("Le fichier est plein.\n");
+        return;
+    }
+
+    fichier->enregistrements[fichier->nb_enregistrements].id = id;
+    strcpy(fichier->enregistrements[fichier->nb_enregistrements].champs, champs);
+    fichier->nb_enregistrements++;
+    printf("Enregistrement ajouté au fichier '%s'.\n", fichier->nom);
+}
+
+void defragmenter_fichier(Fichier *fichier) {
+    int index_libre = 0;
+    for (int i = 0; i < fichier->nb_enregistrements; i++) {
+        if (fichier->enregistrements[i].id != -1) {
+            if (i != index_libre) {
+                fichier->enregistrements[index_libre] = fichier->enregistrements[i];
+            }
+            index_libre++;
+        }
+    }
+    fichier->nb_enregistrements = index_libre;
+    printf("Défragmentation du fichier '%s' terminée.\n", fichier->nom);
+}
+
+void afficher_menu() {
+    printf("\n--- Simulateur de Système de Gestion de Fichiers ---\n");
+    printf("1. Initialiser la mémoire secondaire\n");
+    printf("2. Créer un fichier\n");
+    printf("3. Charger un fichier\n");
+    printf("4. Insérer un enregistrement\n");
+    printf("5. Défragmenter un fichier\n");
+    printf("6. Quitter\n");
+}
+
+int main() {
+    int choix;
+    char nom[50], mode_globale[10], mode_interne[10], champs[100];
+    int nb_enregistrements, id;
+
+    while (1) {
+        afficher_menu();
+        printf("Votre choix : ");
+        if (scanf("%d", &choix) != 1) {
+            while (getchar() != '\n'); // Nettoie l'entrée
+            continue;
+        }
+
+        switch (choix) {
+            case 1:
+                initialiser_disque();
+                break;
+
+            case 2:
+                printf("Nom du fichier : ");
+                scanf("%s", nom);
+                printf("Nombre d'enregistrements : ");
+                scanf("%d", &nb_enregistrements);
+                printf("Mode d'organisation globale (contigue/chainee) : ");
+                scanf("%s", mode_globale);
+                printf("Mode d'organisation interne (trie/nontrie) : ");
+                scanf("%s", mode_interne);
+                creer_fichier(nom, nb_enregistrements, mode_globale, mode_interne);
+                break;
+
+            case 3:
+                printf("Nom du fichier à charger : ");
+                scanf("%s", nom);
+                Fichier *fichier_a_charger = trouver_fichier(nom);
+                if (fichier_a_charger) {
+                    charger_fichier(fichier_a_charger);
+                } else {
+                    printf("Fichier '%s' non trouvé.\n", nom);
+                }
+                break;
+
+            case 4:
+                printf("Nom du fichier : ");
+                scanf("%s", nom);
+                Fichier *fichier = trouver_fichier(nom);
+                if (fichier) {
+                    printf("ID de l'enregistrement : ");
+                    scanf("%d", &id);
+                    printf("Champs : ");
+                    scanf("%s", champs);
+                    inserer_enregistrement(fichier, id, champs);
+                } else {
+                    printf("Fichier '%s' non trouvé.\n", nom);
+                }
+                break;
+
+            case 5:
+                printf("Nom du fichier à défragmenter : ");
+                scanf("%s", nom);
+                Fichier *fichier_a_defragmenter = trouver_fichier(nom);
+                if (fichier_a_defragmenter) {
+                    defragmenter_fichier(fichier_a_defragmenter);
+                } else {
+                    printf("Fichier '%s' non trouvé.\n", nom);
+                }
+                break;
+
+            case 6:
+                printf("Au revoir !\n");
+                return 0;
+
+            default:
+                printf("Choix invalide. Veuillez réessayer.\n");
+                break;
+        }
+    }
+}
