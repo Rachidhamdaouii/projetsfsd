@@ -34,14 +34,14 @@ Bloc disque[MAX_BLOCS];
 
 void initialiser_disque(int nombre_blocs, int taille_bloc) {
     for (int i = 0; i < nombre_blocs; i++) {
-        disque[i].libre = 1; // Tous les blocs sont libres au dÈpart
+        disque[i].libre = 1; // Tous les blocs sont libres au d√©part
     }
 }
 void creer_fichier(Fichier *fichier, char *nom, int nb_enregistrements, char *mode_globale, char *mode_interne) {
     strcpy(fichier->nom, nom);
     fichier->metadonnees.taille_en_blocs = (nb_enregistrements * sizeof(Enregistrement) + TAILLE_BLOC - 1) / TAILLE_BLOC;
     fichier->metadonnees.taille_en_enregistrements = nb_enregistrements;
-    fichier->metadonnees.adresse_premier_bloc = -1; // Adresse ‡ dÈfinir lors du chargement
+    fichier->metadonnees.adresse_premier_bloc = -1; // Adresse √† d√©finir lors du chargement
     strcpy(fichier->metadonnees.mode_organisation_globale, mode_globale);
     strcpy(fichier->metadonnees.mode_organisation_interne, mode_interne);
     fichier->nb_enregistrements = 0;
@@ -74,7 +74,7 @@ int rechercher_enregistrement(Fichier *fichier, int id) {
             return i; // Retourne l'indice de l'enregistrement
         }
     }
-    return -1; // Enregistrement non trouvÈ
+    return -1; // Enregistrement non trouv√©
 }
 void supprimer_enregistrement(Fichier *fichier, int id) {
     int index = rechercher_enregistrement(fichier, id);
@@ -84,31 +84,69 @@ void supprimer_enregistrement(Fichier *fichier, int id) {
         }
         fichier->nb_enregistrements--;
     } else {
-        printf("Enregistrement non trouvÈ.\n");
+        printf("Enregistrement non trouv√©.\n");
     }
 }
 void defragmenter_fichier(Fichier *fichier) {
-    // Code pour rÈorganiser les enregistrements et les blocs pour rÈcupÈrer l'espace inutilisÈ
+    // Code pour r√©organiser les enregistrements et les blocs pour r√©cup√©rer l'espace inutilis√©
 }
 
 void compactage() {
     // Code pour juxtaposer tous les fichiers sur le disque sans laisser d'espace libre
 }
 void afficher_menu() {
-    printf("\n--- Simulateur de SystËme de Gestion de Fichiers ---\n");
-    printf("1. Initialiser la mÈmoire secondaire\n");
-    printf("2. CrÈer un fichier\n");
-    printf("3. Afficher l'Ètat de la mÈmoire secondaire\n");
+    printf("\n--- Simulateur de Syst√®me de Gestion de Fichiers ---\n");
+    printf("1. Initialiser la m√©moire secondaire\n");
+    printf("2. Cr√©er un fichier\n");
+    printf("3. Afficher l'√©tat de la m√©moire secondaire\n");
     printf("4. Rechercher un enregistrement\n");
-    printf("5. InsÈrer un nouvel enregistrement\n");
+    printf("5. Ins√©rer un nouvel enregistrement\n");
     printf("6. Supprimer un enregistrement\n");
-    printf("7. DÈfragmenter un fichier\n");
+    printf("7. D√©fragmenter un fichier\n");
     printf("8. Supprimer un fichier\n");
     printf("9. Renommer un fichier\n");
-    printf("10. Compactage de la mÈmoire secondaire\n");
-    printf("11. Vider la mÈmoire secondaire\n");
+    printf("10. Compactage de la m√©moire secondaire\n");
+    printf("11. Vider la m√©moire secondaire\n");
     printf("12. Quitter\n");
 }
+void compactage() {
+    int index_libre = 0;
+
+    for (int i = 0; i < MAX_BLOCS; i++) {
+        if (!disque[i].libre) {
+            if (i != index_libre) {
+                disque[index_libre] = disque[i];
+                disque[i].libre = 1;
+                index_libre++;
+            }
+        }
+    }
+
+    // Marquer tous les blocs restants comme libres
+    for (int i = index_libre; i < MAX_BLOCS; i++) {
+        disque[i].libre = 1;
+    }
+
+    printf("Compactage de la m√©moire secondaire termin√©.\n");
+}
+void defragmenter_fichier(Fichier *fichier) {
+    int index_libre = 0;
+    for (int i = 0; i < fichier->nb_enregistrements; i++) {
+        if (fichier->enregistrements[i].id != -1) {  // Supposons que les enregistrements supprim√©s ont l'ID -1
+            if (i != index_libre) {
+                fichier->enregistrements[index_libre] = fichier->enregistrements[i];
+            }
+            index_libre++;
+        }
+    }
+
+    // R√©duire le nombre d'enregistrements pour ne compter que les enregistrements non supprim√©s
+    fichier->nb_enregistrements = index_libre;
+
+    printf("D√©fragmentation du fichier %s termin√©e.\n", fichier->nom);
+}
+
+
 int main() {
     int choix, id;
     char nom[50], mode_globale[10], mode_interne[10], champs[100];
@@ -122,7 +160,7 @@ int main() {
         switch (choix) {
             case 1:
                 initialiser_disque(MAX_BLOCS, TAILLE_BLOC);
-                printf("MÈmoire secondaire initialisÈe.\n");
+                printf("M√©moire secondaire initialis√©e.\n");
                 break;
             case 2:
                 printf("Nom du fichier : ");
@@ -136,14 +174,30 @@ int main() {
                 scanf("%s", mode_interne);
                 creer_fichier(&fichier, nom, nb_enregistrements, mode_globale, mode_interne);
                 charger_fichier(&fichier);
-                printf("Fichier crÈÈ et chargÈ en mÈmoire.\n");
+                printf("Fichier cr√©√© et charg√© en m√©moire.\n");
                 break;
             // Ajouter des cas pour les autres options du menu
-            case 12:
+            case 7:
+                printf("Nom du fichier √† d√©fragmenter : ");
+                scanf("%s", nom);
+                // Recherche du fichier par son nom
+                // On suppose ici que la fonction `trouver_fichier` retourne un pointeur sur le fichier trouv√©.
+                Fichier *fichier = trouver_fichier(nom);
+                if (fichier != NULL) {
+                defragmenter_fichier(fichier);
+               } else {
+                printf("Fichier non trouv√©.\n");
+               }
+                break;
+                case 10:
+                compactage();
+                break;
+
+              case 12:
                 printf("Au revoir !\n");
                 return 0;
             default:
-                printf("Choix invalide. Veuillez rÈessayer.\n");
+                printf("Choix invalide. Veuillez r√©essayer.\n");
                 break;
         }
     }
