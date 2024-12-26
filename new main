@@ -238,29 +238,47 @@ int main() {
     creer_fichier(nom, nb_enregistrements, mode_globale, mode_interne);
     break;
 
-            case 3:
-                printf("Nom du fichier à charger : ");
-                scanf("%s", nom);
-                for (int i = 0; i < nb_fichiers; i++) {
-                    if (strcmp(fichiers[i].nom, nom) == 0) {
-                        charger_fichier(&fichiers[i], total_blocs);
-                        break;
-                    }
-                }
-                break;
+           case 3:
+    printf("Nom du fichier à charger : ");
+    scanf("%s", nom);
+
+    int fichier_trouve = 0; // Variable pour indiquer si le fichier a été trouvé
+
+    for (int i = 0; i < nb_fichiers; i++) {
+        if (strcmp(fichiers[i].nom, nom) == 0) {
+            fichier_trouve = 1; // Fichier trouvé
+            charger_fichier(&fichiers[i], total_blocs);
+            break; // Sortir de la boucle une fois le fichier trouvé
+        }
+    }
+
+    if (!fichier_trouve) {
+        printf("Erreur : Le fichier '%s' n'existe pas en mémoire.\n", nom);
+    }
+    break;
+
             case 4:
                 afficher_table_allocation(total_blocs);
                 break;
             case 5:
-                printf("Nom du fichier : ");
-                scanf("%s", nom);
-                for (int i = 0; i < nb_fichiers; i++) {
-                    if (strcmp(fichiers[i].nom, nom) == 0) {
-                        afficher_metadonnees(&fichiers[i]);
-                        break;
-                    }
-                }
-                break;
+    printf("Nom du fichier : ");
+    scanf("%s", nom);
+
+    int fichier_trouve = 0; // Variable pour indiquer si le fichier a été trouvé
+
+    for (int i = 0; i < nb_fichiers; i++) {
+        if (strcmp(fichiers[i].nom, nom) == 0) {
+            fichier_trouve = 1; // Fichier trouvé
+            afficher_metadonnees(&fichiers[i]);
+            break; // Sortir de la boucle une fois le fichier trouvé
+        }
+    }
+
+    if (!fichier_trouve) {
+        printf("Erreur : Le fichier '%s' n'existe pas en mémoire.\n", nom);
+    }
+    break;
+
             case 6:
                 printf("Nom du fichier : ");
                 scanf("%s", nom);
