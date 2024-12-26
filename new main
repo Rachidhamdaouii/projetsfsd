@@ -264,17 +264,16 @@ int main() {
     printf("Nom du fichier : ");
     scanf("%s", nom);
 
-    int fichier_trouve = 0; // Variable pour indiquer si le fichier a été trouvé
-
+    int fichiertrouve = 0;
     for (int i = 0; i < nb_fichiers; i++) {
         if (strcmp(fichiers[i].nom, nom) == 0) {
-            fichier_trouve = 1; // Fichier trouvé
+            fichiertrouve = 1; // Fichier trouvé
             afficher_metadonnees(&fichiers[i]);
             break; // Sortir de la boucle une fois le fichier trouvé
         }
     }
 
-    if (!fichier_trouve) {
+    if (!fichiertrouve) {
         printf("Erreur : Le fichier '%s' n'existe pas en mémoire.\n", nom);
     }
     break;
