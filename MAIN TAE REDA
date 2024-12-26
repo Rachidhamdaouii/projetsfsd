@@ -238,9 +238,9 @@ int main() {
                 scanf("%s", nom);
                 printf("donne le nbr d'enregitrements : ");
                 scanf("%d", &nb_enregistrements);
-                printf("Mode d'organisation globale : ");
+                printf("Mode d'organisation globale : (contigue/chainee)");
                 scanf("%s", mode_globale);
-                printf("Mode d'organisation interne : ");
+                printf("Mode d'organisation interne : (trie/non trie)");
                 scanf("%s", mode_interne);
                 creer_fichier(nom, nb_enregistrements, mode_globale, mode_interne);
                 break;
