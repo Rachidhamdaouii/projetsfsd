@@ -334,14 +334,18 @@ int main() {
 
                 break;
             case 2:
-    printf("Nom du fichier : ");
+     printf("Nom du fichier : ");
                 scanf("%s", nom);
                 printf("donne le nbr d'enregitrements : ");
                 scanf("%d", &nb_enregistrements);
-                printf("Mode d'organisation globale : ");
+                do {
+                printf("Mode d'organisation globale (contigue/chainee) : ");
                 scanf("%s", mode_globale);
-                printf("Mode d'organisation interne : ");
+                }while(mode_globale == "contigue" || mode_globale == "chainee");
+                do {
+                printf("Mode d'organisation interne (trie/non trie) :");
                 scanf("%s", mode_interne);
+                }while(mode_interne=="trie"||mode_interne=="non trie");
                 creer_fichier(nom, nb_enregistrements, mode_globale, mode_interne);
                 break;
            case 3:
@@ -507,4 +511,3 @@ int main() {
 
     return 0;
 }
-
