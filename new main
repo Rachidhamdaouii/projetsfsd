@@ -52,6 +52,16 @@ void afficher_table_allocation(int total_blocs) {
     }
 }
 
+
+// Fonction de comparaison pour trier les enregistrements par ID
+int comparer_enregistrements(const void *a, const void *b) {
+    Enregistrement *enr1 = (Enregistrement *)a;
+    Enregistrement *enr2 = (Enregistrement *)b;
+
+    // Comparaison des IDs des deux enregistrements
+    return (enr1->id - enr2->id);
+}
+
 void creer_fichier(char *nom, int nb_enregistrements, char *mode_globale, char *mode_interne) {
     if (nb_fichiers >= MAX_BLOCS) {
         printf("Erreur : Nombre maximum de fichiers atteint.\n");
@@ -84,8 +94,61 @@ void creer_fichier(char *nom, int nb_enregistrements, char *mode_globale, char *
         exit(1);
     }
 
+    // Implémentation du mode d'organisation globale
+    if (strcmp(mode_globale, "contigue") == 0) {
+        // Allocation contiguë des enregistrements dans le disque
+        int index_bloc = 0;
+        for (int i = 0; i < blocs_necessaires; i++) {
+            while (!disque[index_bloc].libre) {
+                index_bloc++;
+            }
+            disque[index_bloc].libre = 0; // Marquer le bloc comme occupé
+            nouveau_fichier->enregistrements->champs[i] = index_bloc;
+            index_bloc++;
+        }
+        printf("Mode global : contigu (allocation contiguë des blocs).\n");
+    } else if (strcmp(mode_globale, "chainee") == 0) {
+        // Allocation chaînée des enregistrements dans le disque
+        int index_bloc = 0;
+        int prev_bloc = -1; // Aucun bloc précédent au départ
+        for (int i = 0; i < blocs_necessaires; i++) {
+            while (!disque[index_bloc].libre) {
+                index_bloc++;
+            }
+            disque[index_bloc].libre = 0; // Marquer le bloc comme occupé
+            if (prev_bloc != -1) {
+                // Chaîner l'enregistrement précédent avec le nouveau bloc
+                nouveau_fichier->enregistrements->champs[i-1] = index_bloc;
+            }
+            nouveau_fichier->enregistrements->champs[i] = index_bloc;
+            prev_bloc = index_bloc; // Le bloc actuel devient le précédent pour la prochaine itération
+            index_bloc++;
+        }
+        printf("Mode global : chaînée (allocation chaînée des blocs).\n");
+    } else {
+        printf("Mode global non reconnu : %s\n", mode_globale);
+        return;
+    }
+
+    // Implémentation du mode d'organisation interne
+    if (strcmp(mode_interne, "trie") == 0) {
+        // Tri des enregistrements par un critère (par exemple, par une clé primaire)
+        qsort(nouveau_fichier->enregistrements, nb_enregistrements, sizeof(Enregistrement), comparer_enregistrements);
+        printf("Mode interne : trié (enregistrements triés).\n");
+    } else if (strcmp(mode_interne, "non trie") == 0) {
+        // Les enregistrements sont ajoutés sans tri
+        printf("Mode interne : non trié (enregistrements ajoutés sans tri).\n");
+    } else {
+        printf("Mode interne non reconnu : %s\n", mode_interne);
+        return;
+    }
+
     printf("Fichier '%s' cree avec %d blocs necessaires.\n", nom, blocs_necessaires);
 }
+
+// Fonction de comparaison pour le tri des enregistrements (exemple avec un champ `cle`)
+
+
 void charger_fichier(Fichier *fichier, int total_blocs) {
     int blocs_necessaires = fichier->metadonnees.taille_en_blocs;
     for (int i = 0; i < total_blocs && blocs_necessaires > 0; i++) {
@@ -270,10 +333,14 @@ int main() {
                 scanf("%s", nom);
                 printf("donne le nbr d'enregitrements : ");
                 scanf("%d", &nb_enregistrements);
+                do {
                 printf("Mode d'organisation globale : (contigue/chainee)");
                 scanf("%s", mode_globale);
+                }while(mode_globale == "contigue" || mode_globale == "chainee");
+                do {
                 printf("Mode d'organisation interne : (trie/non trie)");
                 scanf("%s", mode_interne);
+                }while(mode_interne=="trie"||mode_interne=="non trie");
                 creer_fichier(nom, nb_enregistrements, mode_globale, mode_interne);
                 break;
            case 3:
