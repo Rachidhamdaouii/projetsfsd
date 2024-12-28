@@ -51,8 +51,6 @@ void afficher_table_allocation(int total_blocs) {
         printf("Bloc %d : %s\n", i, disque[i].libre ? "Libre" : "Occupe");
     }
 }
-
-
 // Fonction de comparaison pour trier les enregistrements par ID
 int comparer_enregistrements(const void *a, const void *b) {
     Enregistrement *enr1 = (Enregistrement *)a;
@@ -61,93 +59,7 @@ int comparer_enregistrements(const void *a, const void *b) {
     // Comparaison des IDs des deux enregistrements
     return (enr1->id - enr2->id);
 }
-
-void creer_fichier(char *nom, int nb_enregistrements, char *mode_globale, char *mode_interne) {
-    if (nb_fichiers >= MAX_BLOCS) {
-        printf("Erreur : Nombre maximum de fichiers atteint.\n");
-        return;
-    }
-
-    int blocs_necessaires = (nb_enregistrements * sizeof(Enregistrement) + TAILLE_BLOC - 1) / TAILLE_BLOC;
-    int blocs_disponibles = 0;
-
-    for (int i = 0; i < MAX_BLOCS; i++) {
-        if (disque[i].libre) {
-            blocs_disponibles++;
-        }
-    }
-
-    if (blocs_necessaires > blocs_disponibles) {
-        printf("Erreur : Espace disque insuffisant pour creer le fichier.\n");
-        return;
-    }
-
-    Fichier *nouveau_fichier = &fichiers[nb_fichiers++];
-    strcpy(nouveau_fichier->nom, nom);
-    nouveau_fichier->metadonnees.taille_en_blocs = blocs_necessaires;
-    nouveau_fichier->metadonnees.taille_en_enregistrements = nb_enregistrements;
-    strcpy(nouveau_fichier->metadonnees.mode_organisation_globale, mode_globale);
-    strcpy(nouveau_fichier->metadonnees.mode_organisation_interne, mode_interne);
-    nouveau_fichier->enregistrements = malloc(sizeof(Enregistrement) * nb_enregistrements);
-    if (!nouveau_fichier->enregistrements) {
-        perror("Erreur d'allocation memoire pour les enregistrements");
-        exit(1);
-    }
-
-    // Implémentation du mode d'organisation globale
-    if (strcmp(mode_globale, "contigue") == 0) {
-        // Allocation contiguë des enregistrements dans le disque
-        int index_bloc = 0;
-        for (int i = 0; i < blocs_necessaires; i++) {
-            while (!disque[index_bloc].libre) {
-                index_bloc++;
-            }
-            disque[index_bloc].libre = 0; // Marquer le bloc comme occupé
-            nouveau_fichier->enregistrements->champs[i] = index_bloc;
-            index_bloc++;
-        }
-        printf("Mode global : contigu (allocation contiguë des blocs).\n");
-    } else if (strcmp(mode_globale, "chainee") == 0) {
-        // Allocation chaînée des enregistrements dans le disque
-        int index_bloc = 0;
-        int prev_bloc = -1; // Aucun bloc précédent au départ
-        for (int i = 0; i < blocs_necessaires; i++) {
-            while (!disque[index_bloc].libre) {
-                index_bloc++;
-            }
-            disque[index_bloc].libre = 0; // Marquer le bloc comme occupé
-            if (prev_bloc != -1) {
-                // Chaîner l'enregistrement précédent avec le nouveau bloc
-                nouveau_fichier->enregistrements->champs[i-1] = index_bloc;
-            }
-            nouveau_fichier->enregistrements->champs[i] = index_bloc;
-            prev_bloc = index_bloc; // Le bloc actuel devient le précédent pour la prochaine itération
-            index_bloc++;
-        }
-        printf("Mode global : chaînée (allocation chaînée des blocs).\n");
-    } else {
-        printf("Mode global non reconnu : %s\n", mode_globale);
-        return;
-    }
-
-    // Implémentation du mode d'organisation interne
-    if (strcmp(mode_interne, "trie") == 0) {
-        // Tri des enregistrements par un critère (par exemple, par une clé primaire)
-        qsort(nouveau_fichier->enregistrements, nb_enregistrements, sizeof(Enregistrement), comparer_enregistrements);
-        printf("Mode interne : trié (enregistrements triés).\n");
-    } else if (strcmp(mode_interne, "non trie") == 0) {
-        // Les enregistrements sont ajoutés sans tri
-        printf("Mode interne : non trié (enregistrements ajoutés sans tri).\n");
-    } else {
-        printf("Mode interne non reconnu : %s\n", mode_interne);
-        return;
-    }
-
-    printf("Fichier '%s' cree avec %d blocs necessaires.\n", nom, blocs_necessaires);
-}
-
-// Fonction de comparaison pour le tri des enregistrements (exemple avec un champ `cle`)
-
+void creer_fichier(char *nom, int nb_enregistrements, char *mode_globale, char *mode_interne) { if (nb_fichiers >= MAX_FICHIERS) { printf("Erreur : Nombre maximum de fichiers atteint.\n"); return; } int blocs_necessaires = (nb_enregistrements * sizeof(Enregistrement) + TAILLE_BLOC - 1) / TAILLE_BLOC; int blocs_disponibles = 0; for (int i = 0; i < MAX_BLOCS; i++) { if (disque[i].libre) { blocs_disponibles++; } } if (blocs_necessaires > blocs_disponibles) { printf("Erreur : Espace disque insuffisant pour créer le fichier.\n"); return; } Fichier *nouveau_fichier = &fichiers[nb_fichiers++]; strcpy(nouveau_fichier->nom, nom); nouveau_fichier->metadonnees.taille_en_blocs = blocs_necessaires; nouveau_fichier->metadonnees.taille_en_enregistrements = nb_enregistrements; strcpy(nouveau_fichier->metadonnees.mode_organisation_globale, mode_globale); strcpy(nouveau_fichier->metadonnees.mode_organisation_interne, mode_interne); nouveau_fichier->enregistrements = malloc(sizeof(Enregistrement) * nb_enregistrements); if (!nouveau_fichier->enregistrements) { perror("Erreur d'allocation mémoire pour les enregistrements"); exit(1); } // Implémentation du mode d'organisation globale if (strcmp(mode_globale, "contigue") == 0) { // Allocation contiguë des enregistrements dans le disque int index_bloc = 0; for (int i = 0; i < blocs_necessaires; i++) { while (index_bloc < MAX_BLOCS && !disque[index_bloc].libre) { index_bloc++; // Trouver un bloc libre } if (index_bloc >= MAX_BLOCS) { printf("Erreur : Plus de blocs libres disponibles.\n"); return; } disque[index_bloc].libre = 0; // Marquer le bloc comme occupé nouveau_fichier->enregistrements[i].champs[0] = index_bloc; // Stocker l'index du bloc index_bloc++; // Passer au bloc suivant } printf("Mode global : contigu (allocation contiguë des blocs).\n"); } else if (strcmp(mode_globale, "chainee") == 0) { // Allocation chaînée des enregistrements dans le disque int index_bloc = 0; int prev_bloc = -1; // Aucun bloc précédent au départ for (int i = 0; i < blocs_necessaires; i++) { while (index_bloc < MAX_BLOCS && !disque[index_bloc].libre) { index_bloc++; // Trouver un bloc libre } if (index_bloc >= MAX_BLOCS) { printf("Erreur : Plus de blocs libres disponibles.\n"); return; } disque[index_bloc].libre = 0; // Marquer le bloc comme occupé if (prev_bloc != -1) { // Chaîner l'enregistrement précédent avec le nouveau bloc nouveau_fichier->enregistrements[i-1].champs[0] = index_bloc; } nouveau_fichier->enregistrements[i].champs[0] = index_bloc; prev_bloc = index_bloc; // Le bloc actuel devient le précédent pour la prochaine itération index_bloc++; // Passer au bloc suivant } printf("Mode global : chaînée (allocation chaînée des blocs).\n"); } else { printf("Mode global non reconnu : %s\n", mode_globale); return; } // Implémentation du mode d'organisation interne if (strcmp(mode_interne, "trie") == 0) { // Tri des enregistrements par un critère (par exemple, par une clé primaire) qsort(nouveau_fichier->enregistrements, nb_enregistrements, sizeof(Enregistrement), comparer_enregistrements); printf("Mode interne : trié (enregistrements triés).\n"); } else if (strcmp(mode_interne, "non trie") == 0) { // Les enregistrements sont ajoutés sans tri printf("Mode interne : non trié (enregistrements ajoutés sans tri).\n"); } else { printf("Mode interne non reconnu : %s\n", mode_interne); return; } printf("Fichier '%s' créé avec %d blocs nécessaires.\n", nom, blocs_necessaires); }
 
 void charger_fichier(Fichier *fichier, int total_blocs) {
     int blocs_necessaires = fichier->metadonnees.taille_en_blocs;
@@ -169,18 +81,28 @@ void charger_fichier(Fichier *fichier, int total_blocs) {
 }
 
 void inserer_enregistrement(Fichier *fichier, int id, const char *champs) {
+    // Check if the ID already exists
+    for (int i = 0; i < fichier->nb_enregistrements; i++) {
+        if (fichier->enregistrements[i].id == id && !fichier->enregistrements[i].supprime) {
+            printf("Erreur : Un enregistrement avec l'ID %d existe déjà dans le fichier '%s'.\n", id, fichier->nom);
+            return;
+        }
+    }
+
+    // Check if there's space for a new record
     if (fichier->nb_enregistrements >= fichier->metadonnees.taille_en_enregistrements) {
-        printf("Impossible d'inserer un nouvel enregistrement : capacite maximale atteinte pour le fichier '%s'.\n", fichier->nom);
+        printf("Impossible d'insérer un nouvel enregistrement : capacité maximale atteinte pour le fichier '%s'.\n", fichier->nom);
         return;
     }
 
+    // Add the new record
     Enregistrement *enregistrement = &fichier->enregistrements[fichier->nb_enregistrements];
     enregistrement->id = id;
     strcpy(enregistrement->champs, champs);
     enregistrement->supprime = false;
     fichier->nb_enregistrements++;
 
-    printf("Enregistrement ajoute au fichier '%s'. Nombre total : %d.\n", fichier->nom, fichier->nb_enregistrements);
+    printf("Enregistrement ajouté au fichier '%s'. Nombre total : %d.\n", fichier->nom, fichier->nb_enregistrements);
 }
 
 void rechercher_enregistrement(Fichier *fichier, int id) {
@@ -214,7 +136,7 @@ void suppression_physique(Fichier *fichier) {
         }
     }
     fichier->nb_enregistrements = index;
-    printf("Suppression physique effectuee pour le fichier '%s'.\n", fichier->nom);
+    printf("Suppression physique effectuee pour l'enregistrement '%d' du fichier '%s'.\n" , fichier->nom);
 }
 
 void compactage_fichier(Fichier *fichier) {
@@ -329,16 +251,16 @@ int main() {
 
                 break;
             case 2:
-    printf("Nom du fichier : ");
+     printf("Nom du fichier : ");
                 scanf("%s", nom);
                 printf("donne le nbr d'enregitrements : ");
                 scanf("%d", &nb_enregistrements);
                 do {
-                printf("Mode d'organisation globale : (contigue/chainee)");
+                printf("Mode d'organisation globale (contigue/chainee) : ");
                 scanf("%s", mode_globale);
                 }while(mode_globale == "contigue" || mode_globale == "chainee");
                 do {
-                printf("Mode d'organisation interne : (trie/non trie)");
+                printf("Mode d'organisation interne (trie/non trie) :");
                 scanf("%s", mode_interne);
                 }while(mode_interne=="trie"||mode_interne=="non trie");
                 creer_fichier(nom, nb_enregistrements, mode_globale, mode_interne);
@@ -437,10 +359,10 @@ int main() {
             case 9:
                 printf("Nom du fichier : ");
                 scanf("%s", nom);
-                int fichier_trouveee = 0 ;
+                bool fichier_trouveee = false ;
                 for (int i = 0; i < nb_fichiers; i++) {
                     if (strcmp(fichiers[i].nom, nom) == 0) {
-                        int fichier_trouveee = 1 ;
+                        fichier_trouveee = true ;
                         suppression_physique(&fichiers[i]);
                         break;
                     }
@@ -492,7 +414,7 @@ int main() {
                 printf ("Erreur : le fichier '%s' n'existe pas dans la memoire . \n" , nom);
                 }
                 break;
-            case 13:
+                case 13:
                 defragmenter_blocs(); // Appel de la fonction de défragmentation
                 break;
             case 14:
@@ -502,7 +424,7 @@ int main() {
                 printf("Choix invalide. Veuillez réessayer.\n");
                 break;
         }
-    } while (choix != 14);
+    } while (choix != 13);
 
     return 0;
 }
