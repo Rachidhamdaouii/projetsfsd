@@ -51,14 +51,27 @@ void afficher_table_allocation(int total_blocs) {
         printf("Bloc %d : %s\n", i, disque[i].libre ? "Libre" : "Occupe");
     }
 }
+// Fonction de comparaison pour trier les enregistrements par ID
+int comparer_enregistrements(const void *a, const void *b) {
+    Enregistrement *enr1 = (Enregistrement *)a;
+    Enregistrement *enr2 = (Enregistrement *)b;
 
+    // Comparaison des IDs des deux enregistrements
+    return (enr1->id - enr2->id);
+}
 void creer_fichier(char *nom, int nb_enregistrements, char *mode_globale, char *mode_interne) {
     if (nb_fichiers >= MAX_BLOCS) {
         printf("Erreur : Nombre maximum de fichiers atteint.\n");
         return;
     }
 
-    int blocs_necessaires = (nb_enregistrements * sizeof(Enregistrement) + TAILLE_BLOC - 1) / TAILLE_BLOC;
+    int blocs_necessaires =  nb_enregistrements / MAX_ENREGISTREMENTS ;
+    printf("blocs_necessaires %d\n",blocs_necessaires);
+    if( nb_enregistrements % MAX_ENREGISTREMENTS != 0 ){
+          blocs_necessaires=blocs_necessaires+1;
+    }else{
+          blocs_necessaires=blocs_necessaires;
+    }
     int blocs_disponibles = 0;
 
     for (int i = 0; i < MAX_BLOCS; i++) {
@@ -135,28 +148,27 @@ void creer_fichier(char *nom, int nb_enregistrements, char *mode_globale, char *
 
     printf("Fichier '%s' cree avec %d blocs necessaires.\n", nom, blocs_necessaires);
 }
-// Fonction de comparaison pour trier les enregistrements par ID
-int comparer_enregistrements(const void *a, const void *b) {
-    Enregistrement *enr1 = (Enregistrement *)a;
-    Enregistrement *enr2 = (Enregistrement *)b;
 
-    // Comparaison des IDs des deux enregistrements
-    return (enr1->id - enr2->id);
-}
 
 void charger_fichier(Fichier *fichier, int total_blocs) {
     int blocs_necessaires = fichier->metadonnees.taille_en_blocs;
-    for (int i = 0; i < total_blocs && blocs_necessaires > 0; i++) {
-        if (disque[i].libre) {
-            disque[i].libre = 0;
-            if (fichier->metadonnees.adresse_premier_bloc == -1) {
-                fichier->metadonnees.adresse_premier_bloc = i;
-            }
-            blocs_necessaires--;
-        }
+    int j = 0;
+    int i = total_blocs -1;
+    while (disque[i].libre==1){
+        j++;
+        i--;
     }
 
-    if (blocs_necessaires > 0) {
+for (int i = 0;i<total_blocs;i++){
+  printf("%d : %d\n", i, disque[i].libre);
+}
+    int k=0,p;
+    for (p=0;p<=j;p++){
+        k++;
+    }
+    printf("%d\n",k);
+
+    if ( blocs_necessaires<j) {
         printf("Espace insuffisant pour charger le fichier '%s'.\n", fichier->nom);
     } else {
         printf("Fichier '%s' charge en mémoire.\n", fichier->nom);
