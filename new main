@@ -154,9 +154,9 @@ void creer_fichier(char *nom, int nb_enregistrements, char *mode_globale, char *
         // Tri des enregistrements par un critère (par exemple, par une clé primaire)
         qsort(nouveau_fichier->enregistrements, nb_enregistrements, sizeof(Enregistrement), comparer_enregistrements);
         printf("Mode interne : trié (enregistrements triés).\n");
-    } else if (strcmp(mode_interne, "non trie") == 0) {
+    } else if (strcmp(mode_interne, "nontrie") == 0) {
         // Les enregistrements sont ajoutés sans tri
-        printf("Mode interne : non trié (enregistrements ajoutés sans tri).\n");
+        printf("Mode interne : nontrié (enregistrements ajoutés sans tri).\n");
     } else {
         printf("Mode interne non reconnu : %s\n", mode_interne);
         return;
@@ -372,9 +372,9 @@ int main() {
                 scanf("%s", mode_globale);
                 }while(mode_globale == "contigue" || mode_globale == "chainee");
                 do {
-                printf("Mode d'organisation interne (trie/non trie) :");
+                printf("Mode d'organisation interne (trie/nontrie) :");
                 scanf("%s", mode_interne);
-                }while(mode_interne=="trie"||mode_interne=="non trie");
+                }while(mode_interne=="trie"||mode_interne=="nontrie");
                 creer_fichier(nom, nb_enregistrements, mode_globale, mode_interne);
                 break;
            case 3:
