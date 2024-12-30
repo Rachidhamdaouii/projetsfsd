@@ -183,12 +183,13 @@ for (int i = 0;i<total_blocs;i++){
         k++;
     }
     printf("%d\n",k);
-
-    if ( blocs_necessaires<k) {
+    if(disque[1].libre==1){
+        printf("Fichier '%s' charge en mémoire.\n", fichier->nom);
+    }else {if ( blocs_necessaires<k) {
         printf("Espace insuffisant pour charger le fichier '%s'.\n", fichier->nom);
     } else {
         printf("Fichier '%s' charge en mémoire.\n", fichier->nom);
-    }
+    }}
 }
 
 void inserer_enregistrement(Fichier *fichier, int id, const char *champs) {
