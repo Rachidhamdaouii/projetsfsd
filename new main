@@ -321,6 +321,17 @@ void defragmenter_blocs() {
 
     printf("Défragmentation terminée. Tous les blocs occupés sont maintenant regroupés.\n");
 }
+void vider_memoire_secondaire(int total_blocs) {
+    // Réinitialisation de tous les blocs à l'état libre
+    for (int i = 0; i < total_blocs; i++) {
+        disque[i].libre = 1;
+    }
+
+    // Réinitialisation des fichiers et de leur contenu
+    nb_fichiers = 0;
+
+    printf(GREEN "La mémoire secondaire a été vidée.\n" RESET);
+}
 
 void afficher_menu() {
     printf("\n--- Simulateur de Systeme de Gestion de Fichiers ---\n");
@@ -337,7 +348,8 @@ void afficher_menu() {
     printf("11. Renommer un fichier\n");
     printf("12. Supprimer un fichier\n");
     printf("13. Défragmenter les blocs\n");
-    printf("14. Quitter\n");
+    printf("14. Vider la mémoire secondaire\n");  // Nouvelle option
+    printf("15. Quitter\n");
 }
 
 int main() {
@@ -529,14 +541,16 @@ int main() {
                 case 13:
                 defragmenter_blocs(); // Appel de la fonction de défragmentation
                 break;
-            case 14:
-                printf("Au revoir !\n");
+           case 14:
+                vider_memoire_secondaire(total_blocs);  // Appeler la fonction pour vider la mémoire
+                break;
+            case 15:
+                printf("Fin du programme.\n");
                 break;
             default:
-                printf("Choix invalide. Veuillez réessayer.\n");
-                break;
+                printf("Choix invalide. Essayez de nouveau.\n");
         }
-    } while (choix != 13);
+    } while (choix != 15);
 
     return 0;
 }
