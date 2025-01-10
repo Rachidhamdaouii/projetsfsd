@@ -154,9 +154,9 @@ void creer_fichier(char *nom, int nb_enregistrements, char *mode_globale, char *
         // Tri des enregistrements par un critère (par exemple, par une clé primaire)
         qsort(nouveau_fichier->enregistrements, nb_enregistrements, sizeof(Enregistrement), comparer_enregistrements);
         printf("Mode interne : trié (enregistrements triés).\n");
-    } else if (strcmp(mode_interne, "non trie") == 0) {
+    } else if (strcmp(mode_interne, "nontrie") == 0) {
         // Les enregistrements sont ajoutés sans tri
-        printf("Mode interne : non trié (enregistrements ajoutés sans tri).\n");
+        printf("Mode interne : nontrié (enregistrements ajoutés sans tri).\n");
     } else {
         printf("Mode interne non reconnu : %s\n", mode_interne);
         return;
@@ -183,12 +183,13 @@ for (int i = 0;i<total_blocs;i++){
         k++;
     }
     printf("%d\n",k);
-
-    if ( blocs_necessaires<j) {
+    if(disque[1].libre==1){
+        printf("Fichier '%s' charge en mémoire.\n", fichier->nom);
+    }else {if ( blocs_necessaires<k) {
         printf("Espace insuffisant pour charger le fichier '%s'.\n", fichier->nom);
     } else {
         printf("Fichier '%s' charge en mémoire.\n", fichier->nom);
-    }
+    }}
 }
 
 void inserer_enregistrement(Fichier *fichier, int id, const char *champs) {
@@ -250,9 +251,47 @@ void suppression_physique(Fichier *fichier) {
     printf("Suppression physique effectuee pour l'enregistrement '%d' du fichier '%s'.\n" , fichier->nom);
 }
 
-void compactage_fichier(Fichier *fichier) {
-    suppression_physique(fichier);
-    printf("Compactage du fichier '%s' termine.\n", fichier->nom);
+void compactage_memoire_secondaire() {
+    // Réinitialiser la table d'allocation des blocs
+    for (int i = 0; i < MAX_BLOCS; i++) {
+        disque[i].libre = 1;  // Marque tous les blocs comme libres
+    }
+
+    int index_libre = 0;  // Indice du premier bloc libre
+
+    // Parcours de tous les fichiers
+    for (int f = 0; f < nb_fichiers; f++) {
+        // Récupérer les métadonnées du fichier
+        int adresse_premier_bloc = fichiers[f].metadonnees.adresse_premier_bloc;
+        int taille_en_blocs = fichiers[f].metadonnees.taille_en_blocs;
+
+        // Si le fichier occupe des blocs, les déplacer
+        if (taille_en_blocs > 0) {
+            // Déplacer les blocs du fichier
+            for (int i = 0; i < taille_en_blocs; i++) {
+                int bloc_courant = adresse_premier_bloc + i;
+
+                // Cherche le prochain bloc libre pour déplacer le bloc
+                while (disque[index_libre].libre == 0) {
+                    index_libre++;
+                }
+
+                // Déplacer le bloc : libérer l'ancien et marquer le nouveau comme occupé
+                disque[bloc_courant].libre = 1;    // Libérer le bloc actuel
+                disque[index_libre].libre = 0;    // Marquer le nouveau bloc comme occupé
+
+                // Mettre à jour l'adresse du premier bloc dans les métadonnées du fichier
+                fichiers[f].metadonnees.adresse_premier_bloc = index_libre;
+
+                printf("Bloc du fichier '%s' déplacé de %d à %d\n", fichiers[f].nom, bloc_courant, index_libre);
+
+                // Avancer l'indice pour le prochain bloc libre
+                index_libre++;
+            }
+        }
+    }
+
+    printf("Compactage de la mémoire secondaire terminé. La table d'allocation a été réinitialisée.\n");
 }
 
 void renommer_fichier(Fichier *fichier, const char *nouveau_nom) {
@@ -289,36 +328,63 @@ void afficher_metadonnees(Fichier *fichier) {
     printf("Mode d'organisation globale : %s\n", fichier->metadonnees.mode_organisation_globale);
     printf("Mode d'organisation interne : %s\n", fichier->metadonnees.mode_organisation_interne);
 }
-void defragmenter_blocs() {
-    int index_libre = 0;
-
-    // Parcours de tous les blocs de la mémoire
-    for (int i = 0; i < MAX_BLOCS; i++) {
-        if (disque[i].libre == 0) { // Si le bloc est occupé
-            if (i != index_libre) {
-                // Trouve quel fichier occupe ce bloc
-                for (int f = 0; f < nb_fichiers; f++) {
-                    // On suppose que les fichiers sont stockés dans l'ordre des blocs
-                    for (int b = 0; b < fichiers[f].metadonnees.taille_en_blocs; b++) {
-                        if (fichiers[f].metadonnees.adresse_premier_bloc + b == i) {
-                            // Déplace le bloc vers 'index_libre'
-                            disque[i].libre = 1; // Libère le bloc actuel
-                            disque[index_libre].libre = 0; // Marque le nouveau bloc comme occupé
-
-                            // Met à jour l'adresse du bloc dans les métadonnées du fichier
-                            fichiers[f].metadonnees.adresse_premier_bloc = index_libre;
-
-                            printf("Bloc %d déplacé vers %d\n", i, index_libre);
-                            break;
-                        }
-                    }
-                }
-            }
-            index_libre++; // On avance le pointeur pour le prochain bloc libre
+void defragmenter_fichier_par_nom(const char *nom_fichier) {
+    // Recherche du fichier par son nom
+    Fichier *fichier = NULL;
+    for (int f = 0; f < nb_fichiers; f++) {
+        if (strcmp(fichiers[f].nom, nom_fichier) == 0) {
+            fichier = &fichiers[f];
+            break;
         }
     }
 
-    printf("Défragmentation terminée. Tous les blocs occupés sont maintenant regroupés.\n");
+    if (fichier == NULL) {
+        printf("Erreur : fichier %s non trouvé.\n", nom_fichier);
+        return; // Le fichier n'a pas été trouvé
+    }
+
+    // Récupération des métadonnées du fichier à défragmenter
+    int adresse_premier_bloc = fichier->metadonnees.adresse_premier_bloc;
+    int taille_en_blocs = fichier->metadonnees.taille_en_blocs;
+
+    int index_libre = 0; // Indice du premier bloc libre
+
+    // Boucle pour chaque bloc du fichier
+    for (int i = 0; i < taille_en_blocs; i++) {
+        int bloc_courant = adresse_premier_bloc + i;
+
+        if (disque[bloc_courant].libre == 0 && bloc_courant != index_libre) {
+            // Trouve l'adresse du premier bloc libre
+            while (disque[index_libre].libre == 0) {
+                index_libre++; // Recherche du prochain bloc libre
+            }
+
+            // Déplace le bloc du fichier vers le bloc libre
+            disque[bloc_courant].libre = 1; // Libère le bloc courant
+            disque[index_libre].libre = 0; // Marque le nouveau bloc comme occupé
+
+            // Mise à jour de l'adresse du premier bloc dans les métadonnées du fichier
+            fichier->metadonnees.adresse_premier_bloc = index_libre;
+
+            printf("Bloc %d déplacé vers %d pour le fichier %s\n", bloc_courant, index_libre, nom_fichier);
+        }
+
+        index_libre++; // Avance le pointeur pour le prochain bloc libre
+    }
+
+    printf("Défragmentation du fichier %s terminée. Tous les blocs sont maintenant regroupés.\n", nom_fichier);
+}
+
+void vider_memoire_secondaire(int total_blocs) {
+    // Réinitialisation de tous les blocs à l'état libre
+    for (int i = 0; i < total_blocs; i++) {
+        disque[i].libre = 1;
+    }
+
+    // Réinitialisation des fichiers et de leur contenu
+    nb_fichiers = 0;
+
+    printf(GREEN "La mémoire secondaire a été vidée.\n" RESET);
 }
 
 void afficher_menu() {
@@ -332,11 +398,12 @@ void afficher_menu() {
     printf("7. Rechercher un enregistrement\n");
     printf("8. Suppression logique d'un enregistrement\n");
     printf("9. Suppression physique des enregistrements supprimes\n");
-    printf("10. Compactage d'un fichier\n");
+    printf("10. Compactage de la memoire secondaire\n");
     printf("11. Renommer un fichier\n");
     printf("12. Supprimer un fichier\n");
     printf("13. Défragmenter les blocs\n");
-    printf("14. Quitter\n");
+    printf("14. Vider la mémoire secondaire\n");  // Nouvelle option
+    printf("15. Quitter\n");
 }
 
 int main() {
@@ -371,9 +438,9 @@ int main() {
                 scanf("%s", mode_globale);
                 }while(mode_globale == "contigue" || mode_globale == "chainee");
                 do {
-                printf("Mode d'organisation interne (trie/non trie) :");
+                printf("Mode d'organisation interne (trie/nontrie) :");
                 scanf("%s", mode_interne);
-                }while(mode_interne=="trie"||mode_interne=="non trie");
+                }while(mode_interne=="trie"||mode_interne=="nontrie");
                 creer_fichier(nom, nb_enregistrements, mode_globale, mode_interne);
                 break;
            case 3:
@@ -482,19 +549,12 @@ int main() {
                 }
                 break;
             case 10:
-                printf("Nom du fichier : ");
-                scanf("%s", nom);
-                int fichier_trouveeee = 0 ;
-                for (int i = 0; i < nb_fichiers; i++) {
-                    if (strcmp(fichiers[i].nom, nom) == 0) {
-                        fichier_trouveeee = 1 ;
-                        compactage_fichier(&fichiers[i]);
-                        break;
-                    }
-                }if (!fichier_trouveeee){
-                printf ("Erreur : le fichier '%s' n'existe pas en memoire . \n" , nom);
-                }
-                break;
+    {
+        // Appel de la fonction de compactage de la mémoire secondaire
+        compactage_memoire_secondaire();
+    }
+    break;
+
             case 11:
                 printf("Nom du fichier : ");
                 scanf("%s", nom);
@@ -526,16 +586,25 @@ int main() {
                 }
                 break;
                 case 13:
-                defragmenter_blocs(); // Appel de la fonction de défragmentation
+    {
+        char nom_fichier[100]; // Déclaration d'un tableau pour stocker le nom du fichier
+        printf("Veuillez entrer le nom du fichier à défragmenter : ");
+        scanf("%99s", nom_fichier); // Récupère le nom du fichier de l'utilisateur
+
+        defragmenter_fichier_par_nom(nom_fichier); // Appel de la fonction avec le nom du fichier
+    }
+    break;
+
+           case 14:
+                vider_memoire_secondaire(total_blocs);  // Appeler la fonction pour vider la mémoire
                 break;
-            case 14:
-                printf("Au revoir !\n");
+            case 15:
+                printf("Fin du programme.\n");
                 break;
             default:
-                printf("Choix invalide. Veuillez réessayer.\n");
-                break;
+                printf("Choix invalide. Essayez de nouveau.\n");
         }
-    } while (choix != 13);
+    } while (choix != 15);
 
     return 0;
 }
