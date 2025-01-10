@@ -76,20 +76,27 @@ int comparer_enregistrements(const void *a, const void *b) {
     return (enr1->id - enr2->id);
 }
 void creer_fichier(char *nom, int nb_enregistrements, char *mode_globale, char *mode_interne) {
+    // Vérification si le nom de fichier existe déjà
+    for (int i = 0; i < nb_fichiers; i++) {
+        if (strcmp(fichiers[i].nom, nom) == 0) {
+            printf(RED "Erreur : Un fichier avec ce nom existe déjà.\n" RESET);
+            return;
+        }
+    }
+
+    // Vérification de l'espace disque disponible
     if (nb_fichiers >= MAX_BLOCS) {
-        printf( RED "Erreur : Nombre maximum de fichiers atteint.\n" RESET );
+        printf(RED "Erreur : Nombre maximum de fichiers atteint.\n" RESET);
         return;
     }
 
-    int blocs_necessaires =  nb_enregistrements / MAX_ENREGISTREMENTS ;
-    printf("blocs_necessaires %d\n",blocs_necessaires);
-    if( nb_enregistrements % MAX_ENREGISTREMENTS != 0 ){
-          blocs_necessaires=blocs_necessaires+1;
-    }else{
-          blocs_necessaires=blocs_necessaires;
+    int blocs_necessaires = nb_enregistrements / MAX_ENREGISTREMENTS;
+    printf("blocs_necessaires %d\n", blocs_necessaires);
+    if (nb_enregistrements % MAX_ENREGISTREMENTS != 0) {
+        blocs_necessaires = blocs_necessaires + 1;
     }
-    int blocs_disponibles = 0;
 
+    int blocs_disponibles = 0;
     for (int i = 0; i < MAX_BLOCS; i++) {
         if (disque[i].libre) {
             blocs_disponibles++;
@@ -97,7 +104,7 @@ void creer_fichier(char *nom, int nb_enregistrements, char *mode_globale, char *
     }
 
     if (blocs_necessaires > blocs_disponibles) {
-        printf(RED "Erreur : Espace disque insuffisant pour creer le fichier.\n" RESET );
+        printf(RED "Erreur : Espace disque insuffisant pour créer le fichier.\n" RESET);
         return;
     }
 
@@ -109,7 +116,7 @@ void creer_fichier(char *nom, int nb_enregistrements, char *mode_globale, char *
     strcpy(nouveau_fichier->metadonnees.mode_organisation_interne, mode_interne);
     nouveau_fichier->enregistrements = malloc(sizeof(Enregistrement) * nb_enregistrements);
     if (!nouveau_fichier->enregistrements) {
-        perror( "Erreur d'allocation memoire pour les enregistrements" );
+        perror("Erreur d'allocation mémoire pour les enregistrements");
         exit(1);
     }
 
@@ -137,7 +144,7 @@ void creer_fichier(char *nom, int nb_enregistrements, char *mode_globale, char *
             disque[index_bloc].libre = 0; // Marquer le bloc comme occupé
             if (prev_bloc != -1) {
                 // Chaîner l'enregistrement précédent avec le nouveau bloc
-                nouveau_fichier->enregistrements->champs[i-1] = index_bloc;
+                nouveau_fichier->enregistrements->champs[i - 1] = index_bloc;
             }
             nouveau_fichier->enregistrements->champs[i] = index_bloc;
             prev_bloc = index_bloc; // Le bloc actuel devient le précédent pour la prochaine itération
@@ -162,7 +169,7 @@ void creer_fichier(char *nom, int nb_enregistrements, char *mode_globale, char *
         return;
     }
 
-    printf( GREEN "Fichier '%s' cree avec %d blocs necessaires.\n" RESET , nom, blocs_necessaires);
+    printf(GREEN "Fichier '%s' créé avec %d blocs nécessaires.\n" RESET, nom, blocs_necessaires);
 }
 
 
