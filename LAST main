@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <conio.h>
+#include <stdlib.h>
 
 #define RESET "\033[0m"
 #define RED "\033[1;31m"
@@ -10,6 +11,9 @@
 #define BLUE "\033[1;34m"
 #define CYAN "\033[1;36m"
 #define WHITE "\033[1;37m"
+#define BOLD "\033[1m"
+#define MAGENTA "\033[35m"
+#define UNDERLINE "\033[4m
 
 #define MAX_BLOCS 1000
 #define TAILLE_BLOC 512
@@ -51,7 +55,7 @@ void initialiser_disque(int total_blocs) {
     for (int i = 0; i < total_blocs; i++) {
         disque[i].libre = 1;
     }
-    printf(GREEN "Mémoire secondaire initialisée avec %d blocs.\n" RESET, total_blocs);
+    printf(GREEN "Memoire secondaire initialisee avec %d blocs.\n" RESET, total_blocs);
 }
 
 
@@ -62,7 +66,7 @@ void afficher_table_allocation(int total_blocs) {
         if (disque[i].libre) {
             printf(GREEN "Bloc %d : Libre\n" RESET, i);
         } else {
-            printf(RED "Bloc %d : Occupé\n" RESET, i);
+            printf(RED "Bloc %d : Occupe\n" RESET, i);
         }
     }
 }
@@ -75,11 +79,11 @@ int comparer_enregistrements(const void *a, const void *b) {
     // Comparaison des IDs des deux enregistrements
     return (enr1->id - enr2->id);
 }
-void creer_fichier(char *nom, int nb_enregistrements, char *mode_globale, char *mode_interne) {
+void creer_charger_fichier(char *nom, int nb_enregistrements, char *mode_globale, char *mode_interne) {
     // Vérification si le nom de fichier existe déjà
     for (int i = 0; i < nb_fichiers; i++) {
         if (strcmp(fichiers[i].nom, nom) == 0) {
-            printf(RED "Erreur : Un fichier avec ce nom existe déjà.\n" RESET);
+            printf(RED "Erreur : Un fichier avec ce nom existe deja.\n" RESET);
             return;
         }
     }
@@ -104,7 +108,7 @@ void creer_fichier(char *nom, int nb_enregistrements, char *mode_globale, char *
     }
 
     if (blocs_necessaires > blocs_disponibles) {
-        printf(RED "Erreur : Espace disque insuffisant pour créer le fichier.\n" RESET);
+        printf(RED "Erreur : Espace disque insuffisant pour creer le fichier.\n" RESET);
         return;
     }
 
@@ -116,7 +120,7 @@ void creer_fichier(char *nom, int nb_enregistrements, char *mode_globale, char *
     strcpy(nouveau_fichier->metadonnees.mode_organisation_interne, mode_interne);
     nouveau_fichier->enregistrements = malloc(sizeof(Enregistrement) * nb_enregistrements);
     if (!nouveau_fichier->enregistrements) {
-        perror("Erreur d'allocation mémoire pour les enregistrements");
+        perror("Erreur d'allocation memoire pour les enregistrements");
         exit(1);
     }
 
@@ -132,7 +136,7 @@ void creer_fichier(char *nom, int nb_enregistrements, char *mode_globale, char *
             nouveau_fichier->enregistrements->champs[i] = index_bloc;
             index_bloc++;
         }
-        printf("Mode global : contigu (allocation contiguë des blocs).\n");
+        printf("Mode global : contigu (allocation contigue des blocs).\n");
     } else if (strcmp(mode_globale, "chainee") == 0) {
         // Allocation chaînée des enregistrements dans le disque
         int index_bloc = 0;
@@ -150,7 +154,7 @@ void creer_fichier(char *nom, int nb_enregistrements, char *mode_globale, char *
             prev_bloc = index_bloc; // Le bloc actuel devient le précédent pour la prochaine itération
             index_bloc++;
         }
-        printf("Mode global : chaînée (allocation chaînée des blocs).\n");
+        printf("Mode global : chainee (allocation chainee des blocs).\n");
     } else {
         printf("Mode global non reconnu : %s\n", mode_globale);
         return;
@@ -160,57 +164,32 @@ void creer_fichier(char *nom, int nb_enregistrements, char *mode_globale, char *
     if (strcmp(mode_interne, "trie") == 0) {
         // Tri des enregistrements par un critère (par exemple, par une clé primaire)
         qsort(nouveau_fichier->enregistrements, nb_enregistrements, sizeof(Enregistrement), comparer_enregistrements);
-        printf("Mode interne : trié (enregistrements triés).\n");
+        printf("Mode interne : trié (enregistrements tries).\n");
     } else if (strcmp(mode_interne, "nontrie") == 0) {
         // Les enregistrements sont ajoutés sans tri
-        printf("Mode interne : nontrié (enregistrements ajoutés sans tri).\n");
+        printf("Mode interne : nontrie (enregistrements ajoutes sans tri).\n");
     } else {
         printf("Mode interne non reconnu : %s\n", mode_interne);
         return;
     }
 
-    printf(GREEN "Fichier '%s' créé avec %d blocs nécessaires.\n" RESET, nom, blocs_necessaires);
+    printf(GREEN "Fichier '%s' cree avec %d blocs nécessaires.\n" RESET, nom, blocs_necessaires);
 }
 
 
-void charger_fichier(Fichier *fichier, int total_blocs) {
-    int blocs_necessaires = fichier->metadonnees.taille_en_blocs;
-    int j = 0;
-    int i = total_blocs -1;
-    while (disque[i].libre==1){
-        j++;
-        i--;
-    }
-
-for (int i = 0;i<total_blocs;i++){
-  printf("%d : %d\n", i, disque[i].libre);
-}
-    int k=0,p;
-    for (p=0;p<=j;p++){
-        k++;
-    }
-    printf("%d\n",k);
-    if(disque[1].libre==1){
-        printf("Fichier '%s' charge en mémoire.\n", fichier->nom);
-    }else {if ( blocs_necessaires<k) {
-        printf("Espace insuffisant pour charger le fichier '%s'.\n", fichier->nom);
-    } else {
-        printf("Fichier '%s' charge en mémoire.\n", fichier->nom);
-    }}
-}
 
 void inserer_enregistrement(Fichier *fichier, int id, const char *champs) {
     // Check if the ID already exists
     for (int i = 0; i < fichier->nb_enregistrements; i++) {
         if (fichier->enregistrements[i].id == id && !fichier->enregistrements[i].supprime) {
-            printf("Erreur : Un enregistrement avec l'ID %d existe déjà dans le fichier '%s'.\n", id, fichier->nom);
+            printf("Erreur : Un enregistrement avec l'ID %d existe deja dans le fichier '%s'.\n", id, fichier->nom);
             return;
         }
     }
 
     // Check if there's space for a new record
     if (fichier->nb_enregistrements >= fichier->metadonnees.taille_en_enregistrements) {
-        printf("Impossible d'insérer un nouvel enregistrement : capacité maximale atteinte pour le fichier '%s'.\n", fichier->nom);
+        printf("Impossible d'inserer un nouvel enregistrement : capacite maximale atteinte pour le fichier '%s'.\n", fichier->nom);
         return;
     }
 
@@ -221,7 +200,7 @@ void inserer_enregistrement(Fichier *fichier, int id, const char *champs) {
     enregistrement->supprime = false;
     fichier->nb_enregistrements++;
 
-    printf("Enregistrement ajouté au fichier '%s'. Nombre total : %d.\n", fichier->nom, fichier->nb_enregistrements);
+    printf("Enregistrement ajoute au fichier '%s'. Nombre total : %d.\n", fichier->nom, fichier->nb_enregistrements);
 }
 
 void rechercher_enregistrement(Fichier *fichier, int id) {
@@ -240,7 +219,7 @@ void suppression_logique(Fichier *fichier, int id) {
     for (int i = 0; i < fichier->nb_enregistrements; i++) {
         if (fichier->enregistrements[i].id == id) {
             fichier->enregistrements[i].supprime = true;
-            printf("Enregistrement avec ID %d marque comme supprimé dans le fichier '%s'.\n", id, fichier->nom);
+            printf("Enregistrement avec ID %d marque comme supprime dans le fichier '%s'.\n", id, fichier->nom);
             return;
         }
     }
@@ -290,7 +269,7 @@ void compactage_memoire_secondaire() {
                 // Mettre à jour l'adresse du premier bloc dans les métadonnées du fichier
                 fichiers[f].metadonnees.adresse_premier_bloc = index_libre;
 
-                printf("Bloc du fichier '%s' déplacé de %d à %d\n", fichiers[f].nom, bloc_courant, index_libre);
+                printf("Bloc du fichier '%s' déplace de %d à %d\n", fichiers[f].nom, bloc_courant, index_libre);
 
                 // Avancer l'indice pour le prochain bloc libre
                 index_libre++;
@@ -298,7 +277,7 @@ void compactage_memoire_secondaire() {
         }
     }
 
-    printf("Compactage de la mémoire secondaire terminé. La table d'allocation a été réinitialisée.\n");
+    printf("Compactage de la memoire secondaire termine. La table d'allocation a ete réinitialisée.\n");
 }
 
 void renommer_fichier(Fichier *fichier, const char *nouveau_nom) {
@@ -327,14 +306,31 @@ void supprimer_fichier(Fichier *fichier) {
     printf("Fichier supprime.\n");
 }
 
+
+
+
+
 void afficher_metadonnees(Fichier *fichier) {
-    printf("\n--- Métadonnées du fichier '%s' ---\n", fichier->nom);
-    printf("Taille en blocs : %d\n", fichier->metadonnees.taille_en_blocs);
-    printf("Taille en enregistrements : %d\n", fichier->metadonnees.taille_en_enregistrements);
-    printf("Adresse du premier bloc : %d\n", fichier->metadonnees.adresse_premier_bloc);
-    printf("Mode d'organisation globale : %s\n", fichier->metadonnees.mode_organisation_globale);
-    printf("Mode d'organisation interne : %s\n", fichier->metadonnees.mode_organisation_interne);
+    printf("\n%s--- Metadonnées du fichier '%s%s%s' ---\n%s", BOLD, CYAN, fichier->nom, RESET, RESET);
+
+    printf("\n%sTaille en blocs:%s\n", MAGENTA , RESET);
+    printf("%s%d\n", GREEN, fichier->metadonnees.taille_en_blocs);
+
+    printf("\n%sTaille en enregistrements:%s\n", MAGENTA, RESET);
+    printf("%s%d\n", GREEN, fichier->metadonnees.taille_en_enregistrements);
+
+    printf("\n%sAdresse du premier bloc:%s\n", MAGENTA, RESET);
+    printf("%s%d\n", GREEN , fichier->metadonnees.adresse_premier_bloc);
+
+    printf("\n%sMode d'organisation globale:%s\n", MAGENTA, RESET);
+    printf("%s%s\n", GREEN , fichier->metadonnees.mode_organisation_globale);
+
+    printf("\n%sMode d'organisation interne:%s\n", MAGENTA, RESET);
+    printf("%s%s\n", GREEN , fichier->metadonnees.mode_organisation_interne);
+
+    printf("%s", RESET);
 }
+
 void defragmenter_fichier_par_nom(const char *nom_fichier) {
     // Recherche du fichier par son nom
     Fichier *fichier = NULL;
@@ -346,7 +342,7 @@ void defragmenter_fichier_par_nom(const char *nom_fichier) {
     }
 
     if (fichier == NULL) {
-        printf("Erreur : fichier %s non trouvé.\n", nom_fichier);
+        printf("Erreur : fichier %s non trouve.\n", nom_fichier);
         return; // Le fichier n'a pas été trouvé
     }
 
@@ -373,13 +369,13 @@ void defragmenter_fichier_par_nom(const char *nom_fichier) {
             // Mise à jour de l'adresse du premier bloc dans les métadonnées du fichier
             fichier->metadonnees.adresse_premier_bloc = index_libre;
 
-            printf("Bloc %d déplacé vers %d pour le fichier %s\n", bloc_courant, index_libre, nom_fichier);
+            printf("Bloc %d déplace vers %d pour le fichier %s\n", bloc_courant, index_libre, nom_fichier);
         }
 
         index_libre++; // Avance le pointeur pour le prochain bloc libre
     }
 
-    printf("Défragmentation du fichier %s terminée. Tous les blocs sont maintenant regroupés.\n", nom_fichier);
+    printf("Defragmentation du fichier %s terminee. Tous les blocs sont maintenant regroupes.\n", nom_fichier);
 }
 
 void vider_memoire_secondaire(int total_blocs) {
@@ -391,26 +387,25 @@ void vider_memoire_secondaire(int total_blocs) {
     // Réinitialisation des fichiers et de leur contenu
     nb_fichiers = 0;
 
-    printf(GREEN "La mémoire secondaire a été vidée.\n" RESET);
+    printf(GREEN "La memoire secondaire a ete vidée.\n" RESET);
 }
 
 void afficher_menu() {
-    printf("\n--- Simulateur de Systeme de Gestion de Fichiers ---\n");
+    printf( CYAN "\n Simulateur de Systeme de Gestion de Fichiers \n" RESET );
     printf("1. Initialiser la memoire secondaire\n");
-    printf("2. Creer un fichier\n");
-    printf("3. Charger un fichier\n");
-    printf("4. Afficher la table d'allocation\n");
-    printf("5. Afficher les metadonnées d'un fichier\n");
-    printf("6. Inserer un enregistrement\n");
-    printf("7. Rechercher un enregistrement\n");
-    printf("8. Suppression logique d'un enregistrement\n");
-    printf("9. Suppression physique des enregistrements supprimes\n");
-    printf("10. Compactage de la memoire secondaire\n");
-    printf("11. Renommer un fichier\n");
-    printf("12. Supprimer un fichier\n");
-    printf("13. Défragmenter les blocs\n");
-    printf("14. Vider la mémoire secondaire\n");  // Nouvelle option
-    printf("15. Quitter\n");
+    printf("2. Creer  et charger un fichier\n");
+    printf("3. Afficher la table d'allocation\n");
+    printf("4. Afficher les metadonnees d'un fichier\n");
+    printf("5. Inserer un enregistrement\n");
+    printf("6. Rechercher un enregistrement\n");
+    printf("7. Suppression logique d'un enregistrement\n");
+    printf("8. Suppression physique des enregistrements supprimes\n");
+    printf("9. Compactage de la memoire secondaire\n");
+    printf("10. Renommer un fichier\n");
+    printf("11. Supprimer un fichier\n");
+    printf("12. Defragmenter les blocs\n");
+    printf("13. Vider la mémoire secondaire\n");  // Nouvelle option
+    printf("14. Quitter\n");
 }
 
 int main() {
@@ -448,31 +443,14 @@ int main() {
                 printf("Mode d'organisation interne (trie/nontrie) :");
                 scanf("%s", mode_interne);
                 }while(mode_interne=="trie"||mode_interne=="nontrie");
-                creer_fichier(nom, nb_enregistrements, mode_globale, mode_interne);
+                creer_charger_fichier(nom, nb_enregistrements, mode_globale, mode_interne);
                 break;
-           case 3:
-    printf("Nom du fichier a charger : ");
-    scanf("%s", nom);
 
-    int fichier_trouve = 0; // Variable pour indiquer si le fichier a été trouvé
 
-    for (int i = 0; i < nb_fichiers; i++) {
-        if (strcmp(fichiers[i].nom, nom) == 0) {
-            fichier_trouve = 1; // Fichier trouvé
-            charger_fichier(&fichiers[i], total_blocs);
-            break; // Sortir de la boucle une fois le fichier trouvé
-        }
-    }
-
-    if (!fichier_trouve) {
-        printf("Erreur : Le fichier '%s' n'existe pas en memoire.\n", nom);
-    }
-    break;
-
-            case 4:
+            case 3:
                 afficher_table_allocation(total_blocs);
                 break;
-            case 5:
+            case 4:
     printf("Nom du fichier : ");
     scanf("%s", nom);
 
@@ -486,11 +464,11 @@ int main() {
     }
 
     if (!fichiertrouve) {
-        printf("Erreur : Le fichier '%s' n'existe pas en mémoire.\n", nom);
+        printf("Erreur : Le fichier '%s' n'existe pas en memoire.\n", nom);
     }
     break;
 
-            case 6:
+            case 5:
                 printf("Nom du fichier : ");
                 scanf("%s", nom);
                 int fichiertrouvee = 0;
@@ -509,7 +487,7 @@ int main() {
         printf("Erreur : Le fichier '%s' n'existe pas en memoire.\n", nom);
     }
                 break;
-            case 7:
+            case 6:
                 printf("Nom du fichier : ");
                 scanf("%s", nom);
                 int fichiertrouveee = 0;
@@ -525,7 +503,7 @@ int main() {
         printf("Erreur : Le fichier '%s' n'existe pas en memoire.\n", nom);
     }
                 break;
-            case 8:
+            case 7:
                 printf("Nom du fichier : ");
                 scanf("%s", nom);
                 int fichier_trouvee = 0 ;
@@ -541,7 +519,7 @@ int main() {
         printf("Erreur : Le fichier '%s' n'existe pas en memoire.\n", nom);
     }
                 break;
-            case 9:
+            case 8:
                 printf("Nom du fichier : ");
                 scanf("%s", nom);
                 bool fichier_trouveee = false ;
@@ -555,14 +533,14 @@ int main() {
                 printf ("Erreur : le fichier '%s' n'existe pas en memoire . \n" , nom);
                 }
                 break;
-            case 10:
+            case 9:
     {
         // Appel de la fonction de compactage de la mémoire secondaire
         compactage_memoire_secondaire();
     }
     break;
 
-            case 11:
+            case 10:
                 printf("Nom du fichier : ");
                 scanf("%s", nom);
                 int fichierr_trouve = 0 ;
@@ -578,7 +556,7 @@ int main() {
                 printf ("Erreur : le fichier '%s' n'existe pas en memoire . \n" , nom);
                 }
                 break;
-            case 12:
+            case 11:
                 printf("Nom du fichier à supprimer : ");
                 scanf("%s", nom);
                 int fichier_ttrouve = 0 ;
@@ -592,26 +570,26 @@ int main() {
                 printf ("Erreur : le fichier '%s' n'existe pas dans la memoire . \n" , nom);
                 }
                 break;
-                case 13:
+                case 12:
     {
         char nom_fichier[100]; // Déclaration d'un tableau pour stocker le nom du fichier
-        printf("Veuillez entrer le nom du fichier à défragmenter : ");
+        printf("Veuillez entrer le nom du fichier à defragmenter : ");
         scanf("%99s", nom_fichier); // Récupère le nom du fichier de l'utilisateur
 
         defragmenter_fichier_par_nom(nom_fichier); // Appel de la fonction avec le nom du fichier
     }
     break;
 
-           case 14:
+           case 13:
                 vider_memoire_secondaire(total_blocs);  // Appeler la fonction pour vider la mémoire
                 break;
-            case 15:
+            case 14:
                 printf("Fin du programme.\n");
                 break;
             default:
                 printf("Choix invalide. Essayez de nouveau.\n");
         }
-    } while (choix != 15);
+    } while (choix != 14);
 
     return 0;
 }
