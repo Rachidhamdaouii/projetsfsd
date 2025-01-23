@@ -146,173 +146,101 @@ void initializeMemoiresecondaire(Memoiresecondaire* ms, int numBlocks, int block
 // Fonction pour créer un nouveau fichier
 
 int Cree_fichier(Memoiresecondaire* ms, const char* nomfichier, int nb_enregistrements,
-
-               char globalOrg, char internalOrg) {
-
-    if(ms->numFiles >= MAX_FILES) {
-
+                 char globalOrg, char internalOrg) {
+    if (ms->numFiles >= MAX_FILES) {
         printf("Erreur: Nombre maximum de fichiers atteint\n");
-
         return -1;
-
     }
 
-
+    // Check for duplicate file name
+    for (int i = 0; i < ms->numFiles; i++) {
+        if (strcmp(ms->fileMetadata[i].nomfichier, nomfichier) == 0) {
+            printf(RED "Erreur: Un fichier avec ce nom existe déjà\n" RESET);
+            return -1;
+        }
+    }
 
     // Calcul du nombre de blocs nécessaires
-
-    int blocs_necessaires= (nb_enregistrements + ms->blockSize - 1) / ms->blockSize;
-
-
+    int blocs_necessaires = (nb_enregistrements + ms->blockSize - 1) / ms->blockSize;
 
     // Vérification de l'espace disponible
-
-    int blocslibre= 0;
-
-    for(int i = 0; i < ms->totalBlocks; i++) {
-
-        if(ms->allocationTable[i] == '0') blocslibre++;
-
+    int blocslibre = 0;
+    for (int i = 0; i < ms->totalBlocks; i++) {
+        if (ms->allocationTable[i] == '0') blocslibre++;
     }
 
-
-
-    if(blocslibre< blocs_necessaires ) {
-
-        printf(RED "Erreur: Espace insuffisant pour creer le fichier \n"RESET );
-
+    if (blocslibre < blocs_necessaires) {
+        printf(RED "Erreur: Espace insuffisant pour créer le fichier\n" RESET);
         return -1;
-
     }
-
-
 
     // Création des métadonnées
-
     Metadata* meta = &ms->fileMetadata[ms->numFiles];
-
     strcpy(meta->nomfichier, nomfichier);
-
     meta->numBlocks = blocs_necessaires;
-
     meta->nb_enregistrements = nb_enregistrements;
-
     meta->Globalorganization = globalOrg;
-
     meta->internorganization = internalOrg;
 
-
-
     // Allocation des blocs selon l'organisation
-
-    if(globalOrg == 'C') {
-
+    if (globalOrg == 'C') {
         // Organisation contiguë
-
         int startBlock = -1;
-
         int consecutiveBlocks = 0;
 
-
-
         // Recherche de blocs contigus
-
-        for(int i = 0; i < ms->totalBlocks; i++) {
-
-            if(ms->allocationTable[i] == '0') {
-
-                if(startBlock == -1) startBlock = i;
-
+        for (int i = 0; i < ms->totalBlocks; i++) {
+            if (ms->allocationTable[i] == '0') {
+                if (startBlock == -1) startBlock = i;
                 consecutiveBlocks++;
-
-                if(consecutiveBlocks == blocs_necessaires) break;
-
+                if (consecutiveBlocks == blocs_necessaires) break;
             } else {
-
                 startBlock = -1;
-
                 consecutiveBlocks = 0;
-
             }
-
         }
 
-
-
-        if(consecutiveBlocks < blocs_necessaires) {
-
-            printf( RED "Erreur: Fragmentation, compactage necessaire\n"RESET );
-
+        if (consecutiveBlocks < blocs_necessaires) {
+            printf(RED "Erreur: Fragmentation, compactage nécessaire\n" RESET);
             return -1;
-
         }
-
-
 
         // Allocation des blocs
-
         meta->firstBlockAddress = startBlock;
-
-        for(int i = 0; i < blocs_necessaires; i++) {
-
+        for (int i = 0; i < blocs_necessaires; i++) {
             ms->allocationTable[startBlock + i] = '1';
-
             strcpy(ms->blocks[startBlock + i].nomfichier, nomfichier);
-
         }
-        printf(GREEN "fichier creer avec succees" RESET );
+        printf(GREEN "Fichier créé avec succès\n" RESET);
     } else {
-
         // Organisation chaînée
-
         int firstBlock = -1;
-
         int prevBlock = -1;
-
         int allocatedBlocks = 0;
 
-
-
-        for(int i = 0; i < ms->totalBlocks && allocatedBlocks < blocs_necessaires; i++) {
-
-            if(ms->allocationTable[i] == '0') {
-
+        for (int i = 0; i < ms->totalBlocks && allocatedBlocks < blocs_necessaires; i++) {
+            if (ms->allocationTable[i] == '0') {
                 ms->allocationTable[i] = '1';
-
                 strcpy(ms->blocks[i].nomfichier, nomfichier);
 
-
-
-                if(firstBlock == -1) firstBlock = i;
-
-                if(prevBlock != -1) {
-
+                if (firstBlock == -1) firstBlock = i;
+                if (prevBlock != -1) {
                     ms->blocks[prevBlock].nextBlock = i;
-
                 }
-
                 prevBlock = i;
-
                 allocatedBlocks++;
-
             }
-
         }
-        printf(GREEN"fichier creer avec succees" RESET );
-
+        printf(GREEN "Fichier créé avec succès\n" RESET);
 
         meta->firstBlockAddress = firstBlock;
-
         ms->blocks[prevBlock].nextBlock = -1;
-
     }
 
-
-
     ms->numFiles++;
-
-
+    return 0;
 }
+
 
 
 
@@ -1328,26 +1256,34 @@ break;
 
 
             case 2:
+    if (ms.totalBlocks == 0) {  // Check if memory is initialized
+        printf(RED "Erreur: Mémoire secondaire non initialisée. Veuillez initialiser la mémoire avant de créer un fichier.\n" RESET);
+        break;
+    }
 
-                printf("Nom du fichier: ");
+    printf("Nom du fichier: ");
+    char nomfichier[50];
+    scanf("%s", nomfichier);
 
-                scanf("%s", nomfichier);
+    printf("Nombre d'enregistrements: ");
+    int nb_enregistrements;
+    scanf("%d", &nb_enregistrements);
 
-                printf("Nombre d'enregistrements: ");
+    printf("Organisation globale (C pour contiguë / L pour chaînée): ");
+    char globalOrg;
+    scanf(" %c", &globalOrg);
 
-                scanf("%d", &nb_enregistrements);
+    printf("Organisation interne (T pour enregistrements fixes / N pour enregistrements variables): ");
+    char internalOrg;
+    scanf(" %c", &internalOrg);
 
-                printf("Organisation globale (C/L): ");
+    int result = Cree_fichier(&ms, nomfichier, nb_enregistrements, globalOrg, internalOrg);
+    if (result == 0) {
+        printf(GREEN "Fichier '%s' créé avec succès.\n" RESET, nomfichier);
+    }
+    // The Cree_fichier function already handles error messages
+    break;
 
-                scanf(" %c", &globalOrg);
-
-                printf("Organisation interne (T/N): ");
-
-                scanf(" %c", &internalOrg);
-
-                Cree_fichier(&ms, nomfichier, nb_enregistrements, globalOrg, internalOrg);
-
-                break;
 
 
 
