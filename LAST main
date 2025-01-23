@@ -100,46 +100,66 @@ typedef struct {
 void initializeMemoiresecondaire(Memoiresecondaire* ms, int numBlocks, int blockSize) {
 
     ms->totalBlocks = numBlocks;
-
     ms->blockSize = blockSize;
-
     ms->numFiles = 0;
 
-
-
     // Allocation de la table d'allocation
-
     ms->allocationTable = (char*)malloc(numBlocks * sizeof(char));
-
-    for(int i = 0; i < numBlocks; i++) {
-
-        ms->allocationTable[i] = '0';  // Tous les blocs sont libres
-
+    if (ms->allocationTable == NULL) {
+        printf("Echec de l'allocation de la table d'allocation.\n");
+        return;
+    } else {
+        printf("Table d'allocation allouée avec succes.\n");
     }
 
-
+    for (int i = 0; i < numBlocks; i++) {
+        ms->allocationTable[i] = '0';  // Tous les blocs sont libres
+    }
 
     // Allocation des blocs
-
     ms->blocks = (Block*)malloc(numBlocks * sizeof(Block));
-
-    for(int i = 0; i < numBlocks; i++) {
-
-        ms->blocks[i].records = (Record*)malloc(blockSize * sizeof(Record));
-
-        ms->blocks[i].nb_enregistrements = 0;
-
-        ms->blocks[i].nextBlock = -1;
-
+    if (ms->blocks == NULL) {
+        printf("Echec de l'allocation des blocs.\n");
+        free(ms->allocationTable);  // Libérer la mémoire déjà allouée
+        return;
+    } else {
+        printf("Blocs alloues avec succes.\n");
     }
 
-
+    for (int i = 0; i < numBlocks; i++) {
+        ms->blocks[i].records = (Record*)malloc(blockSize * sizeof(Record));
+        if (ms->blocks[i].records == NULL) {
+            printf("Echec de l'allocation des enregistrements pour le bloc %d.\n", i);
+            // Libérer la mémoire allouée jusqu'à présent
+            for (int j = 0; j < i; j++) {
+                free(ms->blocks[j].records);
+            }
+            free(ms->blocks);
+            free(ms->allocationTable);
+            return;
+        } else {
+            printf(GREEN"le bloc %d alloues avec succes.\n"RESET, i);
+        }
+        ms->blocks[i].nb_enregistrements = 0;
+        ms->blocks[i].nextBlock = -1;
+    }
 
     // Allocation du tableau de métadonnées
-
     ms->fileMetadata = (Metadata*)malloc(MAX_FILES * sizeof(Metadata));
-
+    if (ms->fileMetadata == NULL) {
+        printf(RED"Echec de l'allocation du tableau de metadonnees.\n"RESET);
+        // Libérer la mémoire allouée précédemment
+        for (int i = 0; i < numBlocks; i++) {
+            free(ms->blocks[i].records);
+        }
+        free(ms->blocks);
+        free(ms->allocationTable);
+        return;
+    } else {
+        printf("Tableau de metadonnees alloue avec succes.\n");
+    }
 }
+
 
 
 
@@ -155,7 +175,7 @@ int Cree_fichier(Memoiresecondaire* ms, const char* nomfichier, int nb_enregistr
     // Check for duplicate file name
     for (int i = 0; i < ms->numFiles; i++) {
         if (strcmp(ms->fileMetadata[i].nomfichier, nomfichier) == 0) {
-            printf(RED "Erreur: Un fichier avec ce nom existe déjà\n" RESET);
+            printf(RED "Erreur: Un fichier avec ce nom existe deja\n" RESET);
             return -1;
         }
     }
@@ -170,7 +190,7 @@ int Cree_fichier(Memoiresecondaire* ms, const char* nomfichier, int nb_enregistr
     }
 
     if (blocslibre < blocs_necessaires) {
-        printf(RED "Erreur: Espace insuffisant pour créer le fichier\n" RESET);
+        printf(RED "Erreur: Espace insuffisant pour creer le fichier\n" RESET);
         return -1;
     }
 
@@ -201,7 +221,7 @@ int Cree_fichier(Memoiresecondaire* ms, const char* nomfichier, int nb_enregistr
         }
 
         if (consecutiveBlocks < blocs_necessaires) {
-            printf(RED "Erreur: Fragmentation, compactage nécessaire\n" RESET);
+            printf(RED "Erreur: Fragmentation, compactage necessaire\n" RESET);
             return -1;
         }
 
@@ -211,7 +231,7 @@ int Cree_fichier(Memoiresecondaire* ms, const char* nomfichier, int nb_enregistr
             ms->allocationTable[startBlock + i] = '1';
             strcpy(ms->blocks[startBlock + i].nomfichier, nomfichier);
         }
-        printf(GREEN "Fichier créé avec succès\n" RESET);
+        printf(GREEN "Fichier cree avec succes\n" RESET);
     } else {
         // Organisation chaînée
         int firstBlock = -1;
@@ -231,7 +251,7 @@ int Cree_fichier(Memoiresecondaire* ms, const char* nomfichier, int nb_enregistr
                 allocatedBlocks++;
             }
         }
-        printf(GREEN "Fichier créé avec succès\n" RESET);
+        printf(GREEN "Fichier cree avec succes\n" RESET);
 
         meta->firstBlockAddress = firstBlock;
         ms->blocks[prevBlock].nextBlock = -1;
@@ -334,154 +354,101 @@ void rechercher_enregistrement(Memoiresecondaire* ms, const char* nomfichier, in
 
 int inserer_enregistrement(Memoiresecondaire* ms, const char* nomfichier, Record newRecord) {
 
-    // Recherche des métadonnées du fichier
-
+    // Recherche des metadonnees du fichier
     int fileIndex = -1;
 
-    for(int i = 0; i < ms->numFiles; i++) {
-
-        if(strcmp(ms->fileMetadata[i].nomfichier, nomfichier) == 0) {
-
+    for (int i = 0; i < ms->numFiles; i++) {
+        if (strcmp(ms->fileMetadata[i].nomfichier, nomfichier) == 0) {
             fileIndex = i;
-
             break;
-
         }
-
     }
 
-
-
-    if(fileIndex == -1) {
-
-        printf(RED"Erreur: Fichier non trouve\n"RESET);
-
+    if (fileIndex == -1) {
+        printf(RED "Erreur: Fichier non trouve\n" RESET);
         return -1;
-
     }
-
-
 
     Metadata* meta = &ms->fileMetadata[fileIndex];
-
     int currentBlock = meta->firstBlockAddress;
 
-
-
-    // Pour l'organisation interne triée
-
-    if(meta->internorganization == 'T') {
-
+    // Pour l'organisation interne triee
+    if (meta->internorganization == 'T') {
         // Trouver la position d'insertion
-
-        while(currentBlock != -1) {
-
+        while (currentBlock != -1) {
             Block* block = &ms->blocks[currentBlock];
 
-
+            // Recherche d'un ID existant
+            for (int i = 0; i < block->nb_enregistrements; i++) {
+                if (block->records[i].id == newRecord.id) {
+                    printf(RED "Erreur: Un enregistrement avec le meme ID existe deja\n" RESET);
+                    return -1;
+                }
+            }
 
             // Recherche de la position dans le bloc
-
             int pos = 0;
-
-            while(pos < block->nb_enregistrements && block->records[pos].id < newRecord.id) {
-
+            while (pos < block->nb_enregistrements && block->records[pos].id < newRecord.id) {
                 pos++;
-
             }
 
-
-
-            if(block->nb_enregistrements < ms->blockSize) {
-
+            if (block->nb_enregistrements < ms->blockSize) {
                 // Il y a de la place dans ce bloc
-
-                // Décalage des enregistrements
-
-                for(int i = block->nb_enregistrements; i > pos; i--) {
-
-                    block->records[i] = block->records[i-1];
-
+                // Decalage des enregistrements
+                for (int i = block->nb_enregistrements; i > pos; i--) {
+                    block->records[i] = block->records[i - 1];
                 }
-
                 block->records[pos] = newRecord;
-
                 block->nb_enregistrements++;
-
                 meta->nb_enregistrements++;
 
+                printf(GREEN "Succes: Enregistrement insere dans le fichier '%s'.\n" RESET, nomfichier);
                 return 0;
-
             }
-
-
 
             // Passage au bloc suivant
-
-            if(meta->Globalorganization == 'C') {
-
+            if (meta->Globalorganization == 'C') {
                 currentBlock++;
-
-                if(currentBlock >= meta->firstBlockAddress + meta->numBlocks) break;
-
+                if (currentBlock >= meta->firstBlockAddress + meta->numBlocks) break;
             } else {
-
                 currentBlock = ms->blocks[currentBlock].nextBlock;
-
             }
-
         }
-
     } else {
-
-        // Organisation non triée - insertion à la première place libre
-
-        while(currentBlock != -1) {
-
+        // Organisation non triee - insertion a la premiere place libre
+        while (currentBlock != -1) {
             Block* block = &ms->blocks[currentBlock];
 
+            // Recherche d'un ID existant
+            for (int i = 0; i < block->nb_enregistrements; i++) {
+                if (block->records[i].id == newRecord.id) {
+                    printf(RED "Erreur: Un enregistrement avec le meme ID existe deja\n" RESET);
+                    return -1;
+                }
+            }
 
-
-            if(block->nb_enregistrements < ms->blockSize) {
-
+            if (block->nb_enregistrements < ms->blockSize) {
                 block->records[block->nb_enregistrements] = newRecord;
-
                 block->nb_enregistrements++;
-
                 meta->nb_enregistrements++;
 
+                printf(GREEN "Succes: Enregistrement insere dans le fichier '%s'.\n" RESET, nomfichier);
                 return 0;
-
             }
-
-
 
             // Passage au bloc suivant
-
-            if(meta->Globalorganization == 'C') {
-
+            if (meta->Globalorganization == 'C') {
                 currentBlock++;
-
-                if(currentBlock >= meta->firstBlockAddress + meta->numBlocks) break;
-
+                if (currentBlock >= meta->firstBlockAddress + meta->numBlocks) break;
             } else {
-
                 currentBlock = ms->blocks[currentBlock].nextBlock;
-
             }
-
         }
-
     }
 
-
-
-    printf(RED"Erreur: espace insuffisant dans le fichier\n"RESET);
-
+    printf(RED "Erreur: Espace insuffisant pour inserer l'enregistrement dans le fichier '%s'.\n" RESET, nomfichier);
     return -1;
-
 }
-
 
 
 // Fonction pour la suppression logique d'un enregistrement
@@ -1209,17 +1176,19 @@ int main() {
 
         printf("6. Rechercher un enregistrement\n");
 
-        printf("7. Supprimer un enregistrement\n");
+        printf("7. Supprimer un enregistrement logiquement\n");
 
-        printf("8. Defragmenter un fichier\n");
+         printf("8. Supprimer un enregistrement physiquement\n");
 
-        printf("9. Supprimer un fichier\n");
+        printf("9. Defragmenter un fichier\n");
 
-        printf("10. Renommer un fichier\n");
+        printf("10. Supprimer un fichier\n");
 
-        printf("11. Compacter la memoire\n");
+        printf("11. Renommer un fichier\n");
 
-        printf("12. Vider la memoire\n");
+        printf("12. Compacter la memoire\n");
+
+        printf("13. Vider la memoire\n");
 
         printf("0. Quitter\n");
 
@@ -1269,19 +1238,20 @@ break;
     int nb_enregistrements;
     scanf("%d", &nb_enregistrements);
 
-    printf("Organisation globale (C pour contiguë / L pour chaînée): ");
+    printf("Organisation globale (C pour contigue / L pour chainee): ");
     char globalOrg;
     scanf(" %c", &globalOrg);
 
-    printf("Organisation interne (T pour enregistrements fixes / N pour enregistrements variables): ");
+    printf("Organisation interne (T pour trie / N pour non trie): ");
     char internalOrg;
     scanf(" %c", &internalOrg);
 
     int result = Cree_fichier(&ms, nomfichier, nb_enregistrements, globalOrg, internalOrg);
     if (result == 0) {
-        printf(GREEN "Fichier '%s' créé avec succès.\n" RESET, nomfichier);
+        printf(GREEN "Fichier '%s' cree avec succes.\n" RESET, nomfichier);
     }
-    // The Cree_fichier function already handles error messages
+    
+    
     break;
 
 
@@ -1349,25 +1319,27 @@ break;
 
                 scanf("%d", &id);
 
-                printf(" Type de suppression (1: Logique, 2: Physique): ");
-
-                int deleteType;
-
-                scanf("%d", &deleteType);
-
-                if(deleteType == 1)
 
                     supp_log(&ms, nomfichier, id);
 
-                else
 
-                    supp_phy(&ms, nomfichier, id);
 
                 break;
+            case 8 :
+
+                printf("Nom du fichier: ");
+
+                scanf("%s", nomfichier);
+
+                printf(" ID de l'enregistrement: ");
+
+                scanf("%d", &id);
+
+                supp_phy(&ms, nomfichier, id);
 
 
 
-            case 8:
+            case 9:
 
                 printf(" Nom du fichier: ");
 
@@ -1379,7 +1351,7 @@ break;
 
 
 
-            case 9:
+            case 10:
 
                 printf("Nom du fichier: ");
 
@@ -1391,7 +1363,7 @@ break;
 
 
 
-            case 10:
+            case 11:
 
                 printf(" Ancien nom: ");
 
@@ -1409,7 +1381,7 @@ break;
 
 
 
-            case 11:
+            case 12:
 
                 compactage_memoire(&ms);
 
@@ -1417,7 +1389,7 @@ break;
 
 
 
-            case 12:
+            case 13:
 
                 vider_memoire(&ms);
 
