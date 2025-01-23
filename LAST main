@@ -109,7 +109,7 @@ void initializeMemoiresecondaire(Memoiresecondaire* ms, int numBlocks, int block
         printf("Echec de l'allocation de la table d'allocation.\n");
         return;
     } else {
-        printf("Table d'allocation allouée avec succes.\n");
+        printf("Table d'allocation allouee avec succes.\n");
     }
 
     for (int i = 0; i < numBlocks; i++) {
@@ -129,7 +129,7 @@ void initializeMemoiresecondaire(Memoiresecondaire* ms, int numBlocks, int block
     for (int i = 0; i < numBlocks; i++) {
         ms->blocks[i].records = (Record*)malloc(blockSize * sizeof(Record));
         if (ms->blocks[i].records == NULL) {
-            printf("Echec de l'allocation des enregistrements pour le bloc %d.\n", i);
+            printf(RED"Echec de l'allocation des enregistrements pour le bloc %d.\n"RESET, i);
             // Libérer la mémoire allouée jusqu'à présent
             for (int j = 0; j < i; j++) {
                 free(ms->blocks[j].records);
@@ -156,7 +156,7 @@ void initializeMemoiresecondaire(Memoiresecondaire* ms, int numBlocks, int block
         free(ms->allocationTable);
         return;
     } else {
-        printf("Tableau de metadonnees alloue avec succes.\n");
+        printf(GREEN "Tableau de metadonnees alloue avec succes.\n" RESET);
     }
 }
 
@@ -168,7 +168,7 @@ void initializeMemoiresecondaire(Memoiresecondaire* ms, int numBlocks, int block
 int Cree_fichier(Memoiresecondaire* ms, const char* nomfichier, int nb_enregistrements,
                  char globalOrg, char internalOrg) {
     if (ms->numFiles >= MAX_FILES) {
-        printf("Erreur: Nombre maximum de fichiers atteint\n");
+        printf(RED"Erreur: Nombre maximum de fichiers atteint\n"RESET);
         return -1;
     }
 
@@ -204,7 +204,7 @@ int Cree_fichier(Memoiresecondaire* ms, const char* nomfichier, int nb_enregistr
 
     // Allocation des blocs selon l'organisation
     if (globalOrg == 'C') {
-        // Organisation contiguë
+        // Organisation contigue
         int startBlock = -1;
         int consecutiveBlocks = 0;
 
@@ -260,10 +260,6 @@ int Cree_fichier(Memoiresecondaire* ms, const char* nomfichier, int nb_enregistr
     ms->numFiles++;
     return 0;
 }
-
-
-
-
 // Fonction pour rechercher un enregistrement par ID
 
 void rechercher_enregistrement(Memoiresecondaire* ms, const char* nomfichier, int id) {
@@ -281,11 +277,7 @@ void rechercher_enregistrement(Memoiresecondaire* ms, const char* nomfichier, in
             break;
 
         }
-
     }
-
-
-
     if(fileIndex == -1) {
 
         printf(RED "Erreur: Fichier non trouve\n" RESET );
@@ -294,14 +286,9 @@ void rechercher_enregistrement(Memoiresecondaire* ms, const char* nomfichier, in
 
     }
 
-
-
     Metadata* meta = &ms->fileMetadata[fileIndex];
 
     int currentBlock = meta->firstBlockAddress;
-
-
-
     while(currentBlock != -1) {
 
         Block* block = &ms->blocks[currentBlock];
@@ -323,9 +310,6 @@ void rechercher_enregistrement(Memoiresecondaire* ms, const char* nomfichier, in
             }
 
         }
-
-
-
         // Passage au bloc suivant
 
         if(meta->Globalorganization == 'C') {
@@ -341,9 +325,6 @@ void rechercher_enregistrement(Memoiresecondaire* ms, const char* nomfichier, in
         }
 
     }
-
-
-
     printf(RED "Enregistrement avec ce id non trouve\n"RESET );
 
 }
@@ -1250,8 +1231,8 @@ break;
     if (result == 0) {
         printf(GREEN "Fichier '%s' cree avec succes.\n" RESET, nomfichier);
     }
-    
-    
+
+
     break;
 
 
